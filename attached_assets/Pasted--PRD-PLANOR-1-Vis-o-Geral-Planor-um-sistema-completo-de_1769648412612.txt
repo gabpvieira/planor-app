@@ -1,0 +1,349 @@
+# PRD – PLANOR
+
+## 1. Visão Geral
+
+**Planor** é um sistema completo de assistente pessoal digital focado em **planejamento, organização e evolução contínua da vida pessoal**. Diferente de apps genéricos de tarefas ou ferramentas soltas, o Planor funciona como uma **central única**, onde todas as áreas da vida do usuário se conectam de forma clara, simples e elegante.
+
+O produto não é um “app de IA”, mas um **software premium**, polido, confiável e previsível, com uso pontual de inteligência apenas como apoio (resumos, insights e organização), nunca como protagonista visual.
+
+O Planor nasce para pessoas que querem **clareza**, não estímulo excessivo.
+
+---
+
+## 2. Objetivos do Produto
+
+* Centralizar vida pessoal em um único sistema
+* Ajudar o usuário a planejar, executar e revisar
+* Criar consistência em hábitos, metas e finanças
+* Reduzir ansiedade gerada por excesso de apps
+* Transmitir sensação de controle e progresso
+
+---
+
+## 3. Público-Alvo
+
+### Primário
+
+* Profissionais, empreendedores e estudantes adultos
+* Pessoas que valorizam organização, clareza e planejamento
+* Usuários que já testaram Notion, Todoist, apps financeiros, etc.
+
+### Secundário
+
+* Pessoas em processo de desenvolvimento pessoal
+* Usuários que querem melhorar rotina, hábitos e finanças
+
+---
+
+## 4. Proposta de Valor
+
+> “Tudo o que importa na sua vida, organizado em um único lugar.”
+
+Diferenciais:
+
+* Sistema integrado (não módulos soltos)
+* Interface minimalista e premium
+* Pensado para uso diário e de longo prazo
+* Foco em planejamento realista
+
+---
+
+## 5. Estrutura Geral do Produto
+
+### Arquitetura
+
+* **Landing Page (raiz do projeto)**
+* **App Web (dashboard autenticado)**
+* **Painel do Usuário**
+
+Stack:
+
+* Next.js (App Router)
+* Estrutura modular
+* Design System próprio (Planor)
+
+---
+
+## 6. Landing Page
+
+### Objetivo
+
+* Explicar claramente o que é o Planor
+* Mostrar benefícios reais
+* Converter usuários para planos
+
+### Seções
+
+1. Hero (headline clara + CTA)
+2. Problema atual do usuário
+3. Como o Planor resolve
+4. Módulos do sistema
+5. Comparação implícita (sem citar concorrentes)
+6. Planos
+7. FAQ
+8. CTA final
+
+### Planos
+
+**Free**
+
+* Agenda básica
+* Tarefas diárias
+* Anotações simples
+* Resumo do dia limitado
+
+**Mensal**
+
+* Todos os módulos liberados
+* Financeiro pessoal
+* Metas e hábitos
+* Planejamento de treinos e alimentação
+
+**Anual**
+
+* Tudo do mensal
+* Preço reduzido
+* Recursos premium futuros
+
+---
+
+## 7. Mapa Completo de Páginas
+
+### 7.1 Páginas Públicas (Landing)
+
+**/** (Home)
+
+* Hero com proposta clara
+* CTA primário (Criar conta)
+* Explicação do sistema
+* Visão geral dos módulos
+
+**/planos**
+
+* Comparação Free / Mensal / Anual
+* CTA de conversão
+
+**/login**
+
+* Login por e-mail e senha
+* Recuperação de senha
+
+**/registro**
+
+* Criação de conta
+* Seleção de plano inicial
+
+---
+
+## 8. Dashboard Principal
+
+### 8.1 Visão Geral (/app)
+
+Funções:
+
+* Resumo do dia
+* Indicadores rápidos (hábitos, metas, finanças)
+* Próximos compromissos
+* Ações rápidas (adicionar tarefa, evento, nota)
+
+Componentes:
+
+* Header fixo
+* Sidebar minimalista
+* Área central modular
+
+---
+
+## 9. Módulos do Sistema (Páginas + Funções)
+
+### 9.1 Resumo do Dia (/app/hoje)
+
+Funções:
+
+* Visualização automática do dia atual
+* Lista de compromissos do dia
+* Tarefas prioritárias
+* Hábitos do dia
+* Insight textual curto
+
+Ações:
+
+* Marcar tarefa como concluída
+* Registrar hábito
+
+---
+
+### 9.2 Agenda (/app/agenda)
+
+Páginas:
+
+* Visão diária
+* Visão semanal
+* Visão mensal
+
+Funções:
+
+* Criar, editar e remover compromissos
+* Blocos de tempo
+* Notas por evento
+
+---
+
+### 9.3 Tarefas (/app/tarefas)
+
+Funções:
+
+* Criar tarefas
+* Definir prioridade
+* Definir prazo
+* Status (pendente, concluído)
+
+---
+
+### 9.4 Planejamento de Treinos (/app/treinos)
+
+Funções:
+
+* Criar planos de treino
+* Dividir por dias
+* Marcar treino realizado
+* Histórico
+
+---
+
+### 9.5 Alimentação (/app/alimentacao)
+
+Funções:
+
+* Registrar refeições
+* Anotações livres
+* Histórico diário
+
+---
+
+### 9.6 Hábitos (/app/habitos)
+
+Funções:
+
+* Criar hábito
+* Definir frequência
+* Marcar execução
+* Visual de consistência
+
+---
+
+### 9.7 Metas (/app/metas)
+
+Funções:
+
+* Criar metas anuais
+* Dividir em objetivos
+* Atualizar progresso
+
+---
+
+### 9.8 Financeiro (/app/financeiro)
+
+Páginas:
+
+* Visão geral
+* Receitas
+* Despesas
+* Categorias
+
+Funções:
+
+* Registrar entrada
+* Registrar saída
+* Saldo mensal
+* Histórico
+
+---
+
+### 9.9 Conhecimento (/app/conhecimento)
+
+Funções:
+
+* Criar textos longos
+* Organizar por tópicos
+* Busca
+
+---
+
+### 9.10 Anotações (/app/anotacoes)
+
+Funções:
+
+* Criar notas rápidas
+* Editar
+* Buscar
+
+---
+
+### 9.11 Configurações (/app/configuracoes)
+
+Funções:
+
+* Dados do usuário
+* Plano e cobrança
+* Preferências
+
+---
+
+## 10. Experiência do Usuário (UX)
+
+Princípios:
+
+* Zero poluição visual
+* Poucas cores
+* Feedback sutil
+* Navegação previsível
+
+Regra de ouro:
+
+> O usuário nunca deve se sentir perdido.
+
+---
+
+## 10. Identidade Visual
+
+* Fonte: Inter
+* Paleta neutra
+* Azul Planor como destaque
+* Sem gradientes
+* Sem sombras exageradas
+
+---
+
+## 11. Não-Objetivos
+
+* Não é rede social
+* Não é gamificado
+* Não é motivacional exagerado
+* Não é app de IA
+
+---
+
+## 12. Roadmap Futuro
+
+* Integração com bancos
+* App mobile
+* Exportação de dados
+* Integrações externas
+
+---
+
+## 13. Métricas de Sucesso
+
+* Retenção diária
+* Uso contínuo após 30 dias
+* Adoção de múltiplos módulos
+* Conversão Free → Pago
+
+---
+
+## 14. Visão Final
+
+O Planor não é apenas um software.
+
+É um **sistema operacional da vida pessoal**, feito para pessoas que levam planejamento a sério.
