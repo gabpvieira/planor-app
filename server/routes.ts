@@ -3,7 +3,7 @@ import type { Server } from "http";
 import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, getUserId } from "./auth";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -11,11 +11,8 @@ export async function registerRoutes(
 ): Promise<Server> {
 
   // Setup Auth
-  await setupAuth(app);
+  setupAuth(app);
   registerAuthRoutes(app);
-
-  // Helper to get userId from req.user
-  const getUserId = (req: any) => req.user?.claims?.sub;
 
   // Middleware to ensure authentication for API routes
   const requireAuth = isAuthenticated;

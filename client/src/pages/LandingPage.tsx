@@ -2,6 +2,8 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Layout, ShieldCheck, Zap } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { PlanorLogo } from "@/components/ui/planor-logo";
 
 export default function LandingPage() {
   return (
@@ -9,23 +11,21 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="size-8 rounded-lg bg-primary flex items-center justify-center shadow-lg shadow-primary/30">
-              <span className="text-primary-foreground font-bold text-lg">P</span>
-            </div>
-            <span className="font-bold text-xl tracking-tight">Planor</span>
+          <div className="flex items-center gap-2 header-logo">
+            <PlanorLogo size={120} />
           </div>
-          <div className="flex items-center gap-4">
-            <a href="/api/login">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Link href="/login">
               <Button variant="ghost" className="font-medium text-muted-foreground hover:text-foreground">
-                Log in
+                Entrar
               </Button>
-            </a>
-            <a href="/api/login">
+            </Link>
+            <Link href="/login">
               <Button className="font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all">
-                Get Started
+                Começar
               </Button>
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -41,10 +41,10 @@ export default function LandingPage() {
                 transition={{ duration: 0.5 }}
               >
                 <span className="inline-block px-4 py-1.5 rounded-full bg-primary/10 text-primary text-sm font-semibold tracking-wide mb-6">
-                  The All-in-One Life OS
+                  O Sistema Completo para sua Vida
                 </span>
                 <h1 className="text-5xl md:text-7xl font-bold tracking-tight text-foreground text-balance">
-                  Organize your life with <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">precision</span>.
+                  Organize sua vida com <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">precisão</span>.
                 </h1>
               </motion.div>
               
@@ -54,7 +54,7 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.1 }}
               >
-                Planor unifies your tasks, goals, habits, finance, and fitness into one stunning, minimalist interface. Stop juggling apps. Start living.
+                Planor unifica suas tarefas, metas, hábitos, finanças e fitness em uma interface minimalista e elegante. Pare de alternar entre apps. Comece a viver.
               </motion.p>
 
               <motion.div 
@@ -63,13 +63,13 @@ export default function LandingPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <a href="/api/login" className="w-full sm:w-auto">
+                <Link href="/login" className="w-full sm:w-auto">
                   <Button size="lg" className="w-full h-14 px-8 text-lg rounded-full shadow-xl shadow-primary/25 hover:shadow-2xl hover:shadow-primary/40 hover:-translate-y-0.5 transition-all duration-300">
-                    Start for free <ArrowRight className="ml-2 size-5" />
+                    Começar grátis <ArrowRight className="ml-2 size-5" />
                   </Button>
-                </a>
+                </Link>
                 <Button size="lg" variant="outline" className="w-full sm:w-auto h-14 px-8 text-lg rounded-full border-2 hover:bg-muted/50">
-                  View Demo
+                  Ver Demo
                 </Button>
               </motion.div>
             </div>
@@ -86,18 +86,18 @@ export default function LandingPage() {
               {[
                 {
                   icon: Layout,
-                  title: "Unified Dashboard",
-                  desc: "See your entire day at a glance. Habits, tasks, and appointments in one beautiful view."
+                  title: "Dashboard Unificado",
+                  desc: "Veja seu dia inteiro de relance. Hábitos, tarefas e compromissos em uma visualização elegante."
                 },
                 {
                   icon: Zap,
-                  title: "Lightning Fast",
-                  desc: "Built for speed. Instant interactions, offline-first feel, and keyboard shortcuts."
+                  title: "Extremamente Rápido",
+                  desc: "Construído para velocidade. Interações instantâneas, funcionamento offline e atalhos de teclado."
                 },
                 {
                   icon: ShieldCheck,
-                  title: "Secure & Private",
-                  desc: "Your data is yours. Enterprise-grade encryption keeps your life details private."
+                  title: "Seguro e Privado",
+                  desc: "Seus dados são seus. Criptografia de nível empresarial mantém seus detalhes privados."
                 }
               ].map((feature, i) => (
                 <motion.div 
@@ -122,9 +122,9 @@ export default function LandingPage() {
         {/* Minimalist Screenshot / Trust Area */}
         <section className="py-24">
           <div className="container px-4 mx-auto text-center">
-            <h2 className="text-3xl md:text-4xl font-bold mb-12">Everything you need, nothing you don't.</h2>
+            <h2 className="text-3xl md:text-4xl font-bold mb-12">Tudo que você precisa, nada que não precisa.</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
-               {["Tasks", "Calendar", "Habits", "Finance", "Goals", "Workouts", "Nutrition", "Notes"].map((item) => (
+               {["Tarefas", "Calendário", "Hábitos", "Finanças", "Metas", "Treinos", "Nutrição", "Notas"].map((item) => (
                  <div key={item} className="flex items-center gap-2 p-4 rounded-lg bg-secondary/50 border border-border/50 justify-center">
                    <CheckCircle2 className="size-5 text-primary" />
                    <span className="font-medium">{item}</span>
@@ -139,12 +139,9 @@ export default function LandingPage() {
       <footer className="py-12 border-t border-border/40 bg-muted/10">
         <div className="container px-4 mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-2">
-            <div className="size-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-xs">P</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight">Planor</span>
+            <PlanorLogo size={28} />
           </div>
-          <p className="text-sm text-muted-foreground">© 2024 Planor Inc. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">© 2024 Planor Inc. Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>

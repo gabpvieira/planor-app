@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 192 192" width="192" height="192" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" fill="#cc092f" rx="20"/>
+  <g fill="#ffffff" transform="translate(30, 50)">
+    <path d="M0 45h132v10H0zM0 60h132v10H0z"/>
+    <rect x="0" y="0" width="132" height="35" rx="5"/>
+    <text x="66" y="26" font-family="Arial, sans-serif" font-size="22" font-weight="bold" fill="#cc092f" text-anchor="middle">Bradesco</text>
+  </g>
+</svg>

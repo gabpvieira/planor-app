@@ -33,7 +33,7 @@ export function useCreateTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.tasks.list.path] });
-      toast({ title: "Task created", description: "Your task has been added." });
+      toast({ title: "Tarefa criada", description: "Sua tarefa foi adicionada." });
     },
   });
 }
@@ -58,7 +58,7 @@ export function useUpdateTask() {
       queryClient.invalidateQueries({ queryKey: [api.tasks.list.path] });
     },
     onError: () => {
-      toast({ title: "Error", description: "Failed to update task", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao atualizar tarefa", variant: "destructive" });
     }
   });
 }
@@ -75,7 +75,7 @@ export function useDeleteTask() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.tasks.list.path] });
-      toast({ title: "Task deleted", description: "Task removed successfully." });
+      toast({ title: "Tarefa excluída", description: "Tarefa removida com sucesso." });
     },
   });
 }

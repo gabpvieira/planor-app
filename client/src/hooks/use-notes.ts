@@ -32,7 +32,7 @@ export function useCreateNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.notes.list.path] });
-      toast({ title: "Note created" });
+      toast({ title: "Nota criada" });
     },
   });
 }
@@ -55,7 +55,7 @@ export function useUpdateNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.notes.list.path] });
-      toast({ title: "Note saved" });
+      toast({ title: "Nota salva" });
     },
   });
 }
@@ -72,7 +72,7 @@ export function useDeleteNote() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.notes.list.path] });
-      toast({ title: "Note deleted" });
+      toast({ title: "Nota excluída" });
     },
   });
 }

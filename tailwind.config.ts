@@ -83,9 +83,28 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)"],
+        sans: ['Poppins', 'Arial', 'sans-serif'],
         serif: ["var(--font-serif)"],
-        mono: ["var(--font-mono)"],
+        mono: ['"SF Mono"', 'Monaco', 'Consolas', 'monospace'],
+      },
+      fontSize: {
+        'xs': ['0.75rem', { lineHeight: '1.5' }],      // 12px
+        'sm': ['0.875rem', { lineHeight: '1.5' }],    // 14px
+        'base': ['1rem', { lineHeight: '1.5' }],      // 16px
+        'lg': ['1.125rem', { lineHeight: '1.4' }],    // 18px
+        'xl': ['1.25rem', { lineHeight: '1.4' }],     // 20px
+        '2xl': ['1.5rem', { lineHeight: '1.3' }],     // 24px
+        '3xl': ['1.75rem', { lineHeight: '1.3' }],    // 28px
+        '4xl': ['2.25rem', { lineHeight: '1.2' }],    // 36px
+        '5xl': ['3rem', { lineHeight: '1.1' }],       // 48px
+      },
+      letterSpacing: {
+        'tighter': '-0.02em',
+        'tight': '-0.01em',
+        'normal': '0',
+        'wide': '0.01em',
+        'wider': '0.02em',
+        'widest': '0.04em',
       },
       keyframes: {
         "accordion-down": {

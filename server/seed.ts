@@ -1,26 +1,45 @@
+import "dotenv/config";
 import { db } from "./db";
-import { users, appointments, tasks, habits, goals, notes } from "@shared/schema";
-import { storage } from "./storage";
+import { users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 async function seed() {
-  console.log("Seeding database...");
+  console.log("🌱 Iniciando seed do banco de dados...");
 
-  // Check if we have a user (we need a user ID to link data to)
-  // Since we use Replit Auth, we can't easily fake a user that matches a real login unless we know the ID.
-  // However, for testing purposes, we can insert a dummy user and link data to it.
-  // But wait, the frontend only shows data for the *logged in* user.
-  // So seeding data for a dummy user won't show up when *I* log in as me.
-  
-  // Strategy: We can't effectively seed user-specific data without a user ID.
-  // I will skip seeding user-specific data for now, as the user will start fresh.
-  // OR, I can make the seed script interactive or just skip it.
-  
-  // Actually, I'll just leave this file empty-ish or just log.
-  // Real users want to see *their* data, not fake data.
-  // But to make the app look good "on first load" usually implies some demo data.
-  // But with Auth, that's hard.
-  
-  console.log("Skipping seed for authenticated app. User will create their own data.");
+  try {
+    // Criar usuário de desenvolvimento
+    const devEmail = "dev@teste.com";
+    
+    // Verificar se o usuário já existe
+    const [existingUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, devEmail))
+      .limit(1);
+
+    if (existingUser) {
+      console.log("✅ Usuário de desenvolvimento já existe:", devEmail);
+    } else {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          email: devEmail,
+          firstName: "Dev",
+          lastName: "User",
+        })
+        .returning();
+
+      console.log("✅ Usuário de desenvolvimento criado:", newUser.email);
+      console.log("📧 Email:", devEmail);
+      console.log("🔑 Senha: 123456");
+    }
+
+    console.log("✨ Seed concluído com sucesso!");
+    process.exit(0);
+  } catch (error) {
+    console.error("❌ Erro ao executar seed:", error);
+    process.exit(1);
+  }
 }
 
 seed().catch(console.error);

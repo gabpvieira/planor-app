@@ -36,7 +36,7 @@ export function useCreateAppointment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.appointments.list.path] });
-      toast({ title: "Event created", description: "Added to your agenda." });
+      toast({ title: "Evento criado", description: "Adicionado à sua agenda." });
     },
   });
 }
@@ -53,7 +53,7 @@ export function useDeleteAppointment() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.appointments.list.path] });
-      toast({ title: "Event deleted", description: "Removed from agenda." });
+      toast({ title: "Evento excluído", description: "Removido da agenda." });
     },
   });
 }
