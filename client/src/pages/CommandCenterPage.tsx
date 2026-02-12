@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Sparkles, Check, X, Loader2, ArrowRight, Keyboard, Send } from 'lucide-react';
+import { Mic, Check, X, Loader2, ArrowRight, Keyboard, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
@@ -451,302 +449,278 @@ export default function CommandCenterPage() {
     }
   };
 
-  const getActionIcon = (action: CommandAction) => {
-    switch (action.action) {
-      case 'finance':
-        return '💰';
-      case 'habit':
-        return '✅';
-      case 'agenda':
-        return '📅';
-      default:
-        return '✨';
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col items-center justify-center p-4 sm:p-6">
-      <div className="max-w-2xl w-full space-y-6 sm:space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-2">
+    <div className="min-h-screen bg-[#0A0A0A] relative overflow-hidden">
+      {/* Gradient Background - macOS style */}
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-transparent" />
+      
+      {/* Noise Texture */}
+      <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay pointer-events-none"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E")`,
+        }}
+      />
+
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
+        <div className="w-full max-w-3xl mx-auto space-y-8">
+          
+          {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-center gap-2"
+            className="text-center space-y-3"
           >
-            <Sparkles className="size-6 sm:size-8 text-primary" />
-            <h1 className="text-2xl sm:text-4xl font-bold">Command Center</h1>
-          </motion.div>
-          <p className="text-sm sm:text-base text-muted-foreground px-4">
-            Dite seus comandos e deixe a IA fazer o trabalho
-          </p>
-          <div className="flex items-center gap-2 justify-center">
-            <p className="text-xs text-muted-foreground hidden sm:block">
-              💡 Dica: Segure Espaço para ativar o microfone
+            <h1 className="text-5xl font-semibold tracking-tight bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+              Command Center
+            </h1>
+            <p className="text-base text-white/50 font-light max-w-md mx-auto">
+              Speak naturally. Your AI assistant understands and executes.
             </p>
+          </motion.div>
+
+          {/* Main Orb Container */}
+          <div className="flex flex-col items-center justify-center py-16 gap-8">
+            {/* Orb */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="cursor-pointer"
+              onClick={isListening ? stopListening : startListening}
+            >
+              <ListeningOrb 
+                isListening={isListening} 
+                isProcessing={isProcessing}
+                size="lg"
+              />
+            </motion.div>
+
+            {/* Status */}
+            <AnimatePresence mode="wait">
+              {isProcessing ? (
+                <motion.div
+                  key="processing"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10"
+                >
+                  <Loader2 className="size-4 animate-spin text-blue-400" />
+                  <span className="text-sm font-medium text-white/90">Processing your request</span>
+                </motion.div>
+              ) : isListening ? (
+                <motion.div
+                  key="listening"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-blue-500/10 backdrop-blur-xl border border-blue-500/20"
+                >
+                  <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
+                  <span className="text-sm font-medium text-blue-300">Listening...</span>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="idle"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex flex-col items-center gap-2"
+                >
+                  <span className="text-sm text-white/40 font-light">Click to speak</span>
+                  <div className="flex items-center gap-2 text-xs text-white/30">
+                    <kbd className="px-2 py-1 rounded bg-white/5 border border-white/10 font-mono">Space</kbd>
+                    <span>Hold to activate</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Alternative Input Toggle */}
             <button
               onClick={() => setShowManualInput(!showManualInput)}
-              className="text-xs text-primary hover:underline sm:hidden"
+              className="text-sm text-white/40 hover:text-white/60 transition-colors flex items-center gap-2 group"
             >
-              ou digite seu comando
+              <Keyboard className="size-4" />
+              <span>Type instead</span>
+              <ArrowRight className="size-3 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </div>
-        </div>
 
-        {/* Listening Orb - Visual Premium */}
-        <div className="flex flex-col items-center justify-center py-8 sm:py-12 gap-6">
-          {/* Orbe de Escuta */}
-          <div 
-            className="cursor-pointer transition-transform hover:scale-105 active:scale-95"
-            onClick={isListening ? stopListening : startListening}
-          >
-            <ListeningOrb 
-              isListening={isListening} 
-              isProcessing={isProcessing}
-              size="lg"
-            />
-          </div>
+          {/* Manual Input */}
+          <AnimatePresence>
+            {showManualInput && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+              >
+                <form onSubmit={handleManualSubmit} className="relative">
+                  <Input
+                    value={manualInput}
+                    onChange={(e) => setManualInput(e.target.value)}
+                    placeholder="Type your command here..."
+                    disabled={isProcessing}
+                    className="w-full h-14 pl-6 pr-14 bg-white/5 backdrop-blur-xl border-white/10 rounded-2xl text-white placeholder:text-white/30 focus:border-white/20 focus:ring-2 focus:ring-white/10"
+                  />
+                  <Button 
+                    type="submit" 
+                    size="icon"
+                    disabled={isProcessing || !manualInput.trim()}
+                    className="absolute right-2 top-2 size-10 rounded-xl bg-blue-500 hover:bg-blue-600 text-white"
+                  >
+                    {isProcessing ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <Send className="size-4" />
+                    )}
+                  </Button>
+                </form>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* Status Text */}
+          {/* Transcript */}
+          <AnimatePresence>
+            {transcript && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+              >
+                <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
+                  <div className="flex items-start gap-4">
+                    <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                      <Mic className="size-5 text-blue-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">
+                        You said
+                      </p>
+                      <p className="text-lg text-white/90 leading-relaxed">
+                        {transcript}
+                      </p>
+                    </div>
+                    {isProcessing && (
+                      <Loader2 className="size-5 animate-spin text-blue-400 shrink-0" />
+                    )}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Feedback Cards */}
+          <AnimatePresence mode="popLayout">
+            {feedbackList.map((feedback, index) => (
+              <motion.div
+                key={feedback.id}
+                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: -20 }}
+                transition={{ 
+                  type: 'spring', 
+                  stiffness: 300, 
+                  damping: 30,
+                  delay: index * 0.1 
+                }}
+              >
+                <div className={`
+                  relative overflow-hidden rounded-2xl
+                  ${feedback.type === 'success' 
+                    ? 'bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20' 
+                    : 'bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20'
+                  }
+                  border backdrop-blur-xl
+                `}>
+                  <div className="p-6">
+                    <div className="flex items-start gap-4">
+                      {/* Icon */}
+                      <div className={`
+                        size-12 rounded-xl flex items-center justify-center shrink-0
+                        ${feedback.type === 'success' 
+                          ? 'bg-emerald-500/10' 
+                          : 'bg-red-500/10'
+                        }
+                      `}>
+                        {feedback.type === 'success' ? (
+                          <Check className="size-6 text-emerald-400" strokeWidth={2.5} />
+                        ) : (
+                          <X className="size-6 text-red-400" strokeWidth={2.5} />
+                        )}
+                      </div>
+
+                      {/* Content */}
+                      <div className="flex-1 min-w-0 space-y-3">
+                        <div>
+                          <p className={`text-xs font-semibold mb-1.5 uppercase tracking-wider ${
+                            feedback.type === 'success' ? 'text-emerald-400' : 'text-red-400'
+                          }`}>
+                            {feedback.type === 'success' ? 'Success' : 'Error'}
+                          </p>
+                          <p className="text-base font-medium text-white/90">
+                            {feedback.message}
+                          </p>
+                        </div>
+
+                        {/* Action button */}
+                        {feedback.type === 'success' && feedback.action && (
+                          <motion.button
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: 0.2 }}
+                            onClick={() => setLocation(getRedirectPath(feedback.action!))}
+                            className="
+                              group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
+                              bg-white/5 hover:bg-white/10
+                              border border-white/10 hover:border-white/20
+                              text-sm font-medium text-white/70 hover:text-white/90
+                              transition-all duration-200
+                            "
+                          >
+                            <span>View details</span>
+                            <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
+                          </motion.button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+
+          {/* Examples */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center"
+            transition={{ delay: 0.5 }}
+            className="space-y-4 pt-8"
           >
-            {isProcessing ? (
-              <div className="flex items-center gap-2 text-purple-400">
-                <Loader2 className="size-4 animate-spin" />
-                <span className="text-sm font-medium">Processando...</span>
-              </div>
-            ) : isListening ? (
-              <div className="flex items-center gap-2 text-blue-400">
-                <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
-                <span className="text-sm font-medium">Estou ouvindo...</span>
-              </div>
-            ) : (
-              <div className="text-muted-foreground">
-                <span className="text-sm">Clique no orbe para começar</span>
-              </div>
-            )}
+            <p className="text-xs font-medium text-center text-white/30 uppercase tracking-wider">
+              Try saying
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              {[
+                "I spent $30 on lunch",
+                "Mark running as done",
+                "Meeting tomorrow at 3pm",
+                "Add $20 coffee expense"
+              ].map((example, i) => (
+                <button
+                  key={i}
+                  onClick={() => {
+                    setManualInput(example);
+                    setShowManualInput(true);
+                  }}
+                  className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs text-white/50 hover:text-white/70 transition-all"
+                >
+                  "{example}"
+                </button>
+              ))}
+            </div>
           </motion.div>
-
-          {/* Microphone Icon Button (alternativa mobile) */}
-          <div className="flex gap-2 sm:hidden">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={isListening ? stopListening : startListening}
-              disabled={isProcessing}
-            >
-              {isListening ? (
-                <>
-                  <MicOff className="size-4 mr-2" />
-                  Parar
-                </>
-              ) : (
-                <>
-                  <Mic className="size-4 mr-2" />
-                  Falar
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowManualInput(!showManualInput)}
-              disabled={isProcessing}
-            >
-              <Keyboard className="size-4 mr-2" />
-              Digitar
-            </Button>
-          </div>
-        </div>
-
-        {/* Manual Input (for mobile or when voice not supported) */}
-        <AnimatePresence>
-          {showManualInput && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="px-2"
-            >
-              <Card className="p-4 bg-card/50 backdrop-blur">
-                <form onSubmit={handleManualSubmit} className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                    <Keyboard className="size-4" />
-                    <span>Digite seu comando</span>
-                  </div>
-                  <div className="flex gap-2">
-                    <Input
-                      value={manualInput}
-                      onChange={(e) => setManualInput(e.target.value)}
-                      placeholder="Ex: Gastei 30 reais no almoço"
-                      disabled={isProcessing}
-                      className="flex-1"
-                    />
-                    <Button 
-                      type="submit" 
-                      size="icon"
-                      disabled={isProcessing || !manualInput.trim()}
-                    >
-                      {isProcessing ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        <Send className="size-4" />
-                      )}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Transcript */}
-        <AnimatePresence>
-          {transcript && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="px-2"
-            >
-              <Card className="p-4 sm:p-6 bg-card/50 backdrop-blur">
-                <div className="flex items-start gap-3">
-                  <Mic className="size-4 sm:size-5 text-primary shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-1">
-                      Você disse:
-                    </p>
-                    <p className="text-base sm:text-lg break-words">{transcript}</p>
-                  </div>
-                  {isProcessing && (
-                    <Loader2 className="size-4 sm:size-5 animate-spin text-primary shrink-0" />
-                  )}
-                </div>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Feedback Cards - Individual para cada ação */}
-        <AnimatePresence mode="popLayout">
-          {feedbackList.map((feedback, index) => (
-            <motion.div
-              key={feedback.id}
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ 
-                type: 'spring', 
-                stiffness: 300, 
-                damping: 30,
-                delay: index * 0.1 
-              }}
-              className="px-2"
-            >
-              <div className={`
-                relative overflow-hidden rounded-2xl
-                ${feedback.type === 'success' 
-                  ? 'bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent border-emerald-500/20' 
-                  : 'bg-gradient-to-br from-red-500/10 via-red-500/5 to-transparent border-red-500/20'
-                }
-                border backdrop-blur-xl
-                shadow-lg shadow-black/5
-              `}>
-                {/* Subtle gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-                
-                <div className="relative p-5 sm:p-6">
-                  <div className="flex items-start gap-4">
-                    {/* Icon with glow effect */}
-                    <div className={`
-                      relative shrink-0 size-12 rounded-xl flex items-center justify-center
-                      ${feedback.type === 'success' 
-                        ? 'bg-emerald-500/20 text-emerald-400' 
-                        : 'bg-red-500/20 text-red-400'
-                      }
-                    `}>
-                      <div className={`absolute inset-0 rounded-xl blur-xl opacity-50 ${
-                        feedback.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'
-                      }`} />
-                      {feedback.type === 'success' ? (
-                        <Check className="size-6 relative z-10" strokeWidth={2.5} />
-                      ) : (
-                        <X className="size-6 relative z-10" strokeWidth={2.5} />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0 space-y-3">
-                      <div>
-                        <p className={`text-sm font-semibold mb-1 ${
-                          feedback.type === 'success' ? 'text-emerald-400' : 'text-red-400'
-                        }`}>
-                          {feedback.type === 'success' ? 'Sucesso!' : 'Ops!'}
-                        </p>
-                        <p className="text-base sm:text-lg font-medium text-foreground break-words">
-                          {feedback.message}
-                        </p>
-                      </div>
-
-                      {/* Action button for success */}
-                      {feedback.type === 'success' && feedback.action && (
-                        <motion.button
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 0.2 }}
-                          onClick={() => setLocation(getRedirectPath(feedback.action!))}
-                          className="
-                            group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
-                            bg-gradient-to-r from-emerald-500/20 to-emerald-600/20
-                            hover:from-emerald-500/30 hover:to-emerald-600/30
-                            border border-emerald-500/30 hover:border-emerald-500/50
-                            text-sm font-medium text-emerald-300
-                            transition-all duration-200
-                            shadow-lg shadow-emerald-500/10
-                          "
-                        >
-                          <span className="text-lg">{getActionIcon(feedback.action)}</span>
-                          <span>Ver detalhes</span>
-                          <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
-                        </motion.button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Bottom accent line */}
-                <div className={`h-1 w-full ${
-                  feedback.type === 'success' 
-                    ? 'bg-gradient-to-r from-emerald-500/50 via-emerald-400/50 to-transparent' 
-                    : 'bg-gradient-to-r from-red-500/50 via-red-400/50 to-transparent'
-                }`} />
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-
-        {/* Examples */}
-        <div className="space-y-3 px-2">
-          <p className="text-xs sm:text-sm font-medium text-center text-muted-foreground">
-            Exemplos de comandos:
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-1">
-              "Gastei 30 reais no almoço"
-            </Badge>
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-1">
-              "Marcar corrida como feita"
-            </Badge>
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-1 hidden sm:inline-flex">
-              "Reunião amanhã às 15h"
-            </Badge>
-            <Badge variant="outline" className="text-[10px] sm:text-xs px-2 py-1 hidden md:inline-flex">
-              "Lança 20 de café e marca água como feito"
-            </Badge>
-          </div>
         </div>
       </div>
     </div>
