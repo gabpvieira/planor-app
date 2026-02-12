@@ -1,0 +1,123 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { OpenAI } from "https://esm.sh/openai@4.28.0"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const SYSTEM_PROMPT = `Você é um assistente financeiro especializado em extratos bancários brasileiros.
+Analise o texto do extrato bancário e extraia TODAS as transações encontradas.
+
+REGRAS:
+- Remova códigos bancários irrelevantes (DOC, TED, PIX códigos, números de referência)
+- Mantenha apenas o nome comercial do estabelecimento ou descrição limpa
+- Classifique cada transação em uma das categorias: alimentacao, transporte, moradia, saude, educacao, lazer, compras, servicos, assinaturas, investimentos, salario, freelance, outros
+- Valores negativos ou débitos são "expense", valores positivos ou créditos são "income"
+- Datas devem estar no formato YYYY-MM-DD
+- Valores devem ser float (positivos sempre, o type indica se é entrada ou saída)
+
+Responda APENAS com JSON válido no formato:
+{
+  "transactions": [
+    {
+      "date": "2026-02-10",
+      "description": "Nome limpo do estabelecimento",
+      "amount": 54.90,
+      "category": "alimentacao",
+      "type": "expense"
+    }
+  ]
+}`
+
+serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { text, imageBase64, mimeType } = await req.json()
+
+    if (!text && !imageBase64) {
+      return new Response(
+        JSON.stringify({ error: 'Nenhum texto ou imagem fornecido.' }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OPENAI_API_KEY não configurada' }), 
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const openai = new OpenAI({ apiKey })
+
+    let result: string
+
+    // Process image with GPT-4 Vision
+    if (imageBase64) {
+      const imageResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extraia todas as transações desta imagem de extrato bancário:" },
+              { 
+                type: "image_url", 
+                image_url: { 
+                  url: `data:${mimeType || 'image/png'};base64,${imageBase64}` 
+                } 
+              },
+            ],
+          },
+        ],
+        max_tokens: 4096,
+        temperature: 0.1,
+      })
+
+      const content = imageResponse.choices[0]?.message?.content || '{}'
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      result = jsonMatch ? jsonMatch[0] : '{}'
+    } 
+    // Process text with GPT-4o-mini
+    else {
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: `Extraia as transações deste extrato bancário:\n\n${text.slice(0, 15000)}` },
+        ],
+        max_tokens: 4096,
+        temperature: 0.1,
+        response_format: { type: "json_object" },
+      })
+
+      result = response.choices[0]?.message?.content || '{}'
+    }
+
+    return new Response(result, {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.error('Error processing statement:', error)
+    return new Response(
+      JSON.stringify({ error: error.message || 'Erro ao processar extrato' }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+})

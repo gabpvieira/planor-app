@@ -66,21 +66,27 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
     setStep('processing');
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
+      let payload: { text?: string; imageBase64?: string; mimeType?: string } = {};
 
-      const res = await fetch('/api/finance/import-statement', {
-        method: 'POST',
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Erro ao processar arquivo');
+      // Process based on file type
+      if (file.type === 'application/pdf') {
+        // For PDF, we need to extract text first (client-side with pdf.js or send as base64)
+        // For simplicity, we'll send as base64 and let backend handle it
+        const base64 = await fileToBase64(file);
+        payload = { text: base64, mimeType: file.type };
+      } else if (file.type === 'text/csv' || file.type === 'text/plain') {
+        const text = await file.text();
+        payload = { text };
+      } else if (file.type.startsWith('image/')) {
+        const base64 = await fileToBase64(file);
+        payload = { imageBase64: base64.split(',')[1], mimeType: file.type };
       }
 
-      const data = await res.json();
+      const { data, error } = await supabase.functions.invoke('process-statement', {
+        body: payload,
+      });
+
+      if (error) throw error;
       if (!data.transactions?.length) {
         throw new Error('Nenhuma transação encontrada no extrato');
       }
@@ -96,6 +102,15 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
       setStep('upload');
     }
   }, [toast]);
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
+  };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
