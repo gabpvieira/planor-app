@@ -3,9 +3,6 @@ import multer from "multer";
 import OpenAI from "openai";
 import { isAuthenticated, getUserId } from "./auth";
 
-// @ts-ignore - pdf-parse is a CommonJS module
-const pdfParse = (await import("pdf-parse")).default;
-
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
@@ -68,6 +65,8 @@ export function registerStatementRoutes(app: Express) {
 
       // Extract text based on file type
       if (file.mimetype === 'application/pdf') {
+        // Dynamic import for CommonJS module
+        const pdfParse = (await import("pdf-parse")).default;
         const pdfData = await pdfParse(file.buffer);
         extractedText = pdfData.text;
       } else if (file.mimetype === 'text/csv' || file.mimetype === 'text/plain') {
