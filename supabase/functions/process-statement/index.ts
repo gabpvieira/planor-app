@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { OpenAI } from "https://esm.sh/openai@4.28.0"
+import { decode } from "https://deno.land/std@0.224.0/encoding/base64.ts"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -56,11 +57,11 @@ serve(async (req) => {
   }
 
   try {
-    const { text, imageBase64, mimeType } = await req.json()
+    const { text, imageBase64, mimeType, pdfBase64 } = await req.json()
 
-    if (!text && !imageBase64) {
+    if (!text && !imageBase64 && !pdfBase64) {
       return new Response(
-        JSON.stringify({ error: 'Nenhum texto ou imagem fornecido.' }), 
+        JSON.stringify({ error: 'Nenhum texto, imagem ou PDF fornecido.' }), 
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -83,8 +84,35 @@ serve(async (req) => {
 
     let result: string
 
+    // Process PDF with GPT-4 Vision (PDFs can be sent as base64)
+    if (pdfBase64) {
+      const imageResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          {
+            role: "user",
+            content: [
+              { type: "text", text: "Extraia todas as transações deste PDF de extrato bancário:" },
+              { 
+                type: "image_url", 
+                image_url: { 
+                  url: `data:application/pdf;base64,${pdfBase64}` 
+                } 
+              },
+            ],
+          },
+        ],
+        max_tokens: 4096,
+        temperature: 0.1,
+      })
+
+      const content = imageResponse.choices[0]?.message?.content || '{}'
+      const jsonMatch = content.match(/\{[\s\S]*\}/)
+      result = jsonMatch ? jsonMatch[0] : '{}'
+    }
     // Process image with GPT-4 Vision
-    if (imageBase64) {
+    else if (imageBase64) {
       const imageResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [

@@ -66,14 +66,13 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
     setStep('processing');
 
     try {
-      let payload: { text?: string; imageBase64?: string; mimeType?: string } = {};
+      let payload: { text?: string; imageBase64?: string; pdfBase64?: string; mimeType?: string } = {};
 
       // Process based on file type
       if (file.type === 'application/pdf') {
-        // For PDF, we need to extract text first (client-side with pdf.js or send as base64)
-        // For simplicity, we'll send as base64 and let backend handle it
         const base64 = await fileToBase64(file);
-        payload = { text: base64, mimeType: file.type };
+        // Remove the data:application/pdf;base64, prefix
+        payload = { pdfBase64: base64.split(',')[1], mimeType: file.type };
       } else if (file.type === 'text/csv' || file.type === 'text/plain') {
         const text = await file.text();
         payload = { text };
