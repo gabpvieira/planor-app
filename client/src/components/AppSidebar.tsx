@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
 } from "lucide-react";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +30,7 @@ import { useSidebarState } from "@/hooks/use-sidebar";
 
 const menuItems = [
   { title: "Dashboard", url: "/app", icon: LayoutDashboard },
+  { title: "Command Center", url: "/app/command", icon: Sparkles, highlight: true },
   { title: "Agenda", url: "/app/agenda", icon: Calendar },
   { title: "Tarefas", url: "/app/tasks", icon: CheckSquare },
   { title: "Treinos", url: "/app/workouts", icon: Dumbbell },

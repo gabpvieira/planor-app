@@ -80,10 +80,18 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
         .eq('user_id', user.id)
         .order('name');
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading accounts:', error);
+        // If table doesn't exist, just set empty array
+        setAccounts([]);
+        return;
+      }
+      
+      console.log('Loaded accounts:', data);
       setAccounts(data || []);
     } catch (error) {
       console.error('Error loading accounts:', error);
+      setAccounts([]);
     }
   };
 
@@ -349,7 +357,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
               </div>
             </div>
 
-            <ScrollArea className="flex-1 max-h-[50vh]">
+            <ScrollArea className="flex-1 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 300px)' }}>
               <div className="px-6 pb-4 space-y-2">
                 {transactions.map((t, i) => (
                   <div

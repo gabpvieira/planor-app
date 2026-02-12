@@ -177,6 +177,20 @@ export type InsertGoalObjective = z.infer<typeof insertGoalObjectiveSchema>;
 export type GoalWithObjectives = Goal & { objectives: GoalObjective[] };
 
 // === FINANCE ===
+export const financeAccounts = pgTable("finance_accounts", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
+  userId: text("user_id").notNull().references(() => users.id),
+  name: text("name").notNull(),
+  bank: text("bank").notNull(),
+  type: text("type").notNull().default("checking"), // checking, savings, credit
+  balance: numeric("balance").default("0"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertFinanceAccountSchema = createInsertSchema(financeAccounts).omit({ id: true, createdAt: true });
+export type FinanceAccount = typeof financeAccounts.$inferSelect;
+export type InsertFinanceAccount = z.infer<typeof insertFinanceAccountSchema>;
+
 export const financeTransactions = pgTable("finance_transactions", {
   id: serial("id").primaryKey(),
   userId: text("user_id").notNull().references(() => users.id),

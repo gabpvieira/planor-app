@@ -19,6 +19,7 @@ import HabitsPage from "@/pages/HabitsPage";
 import WorkoutsPage from "@/pages/WorkoutsPage";
 import FinancePage from "@/pages/FinancePage";
 import GoalsPage from "@/pages/GoalsPage";
+import CommandCenterPage from "@/pages/CommandCenterPage";
 import NotFound from "@/pages/not-found";
 import { useState, useEffect } from "react";
 
@@ -53,6 +54,7 @@ function AuthenticatedApp() {
             <Route path="/app/habits" component={HabitsPage} />
             <Route path="/app/goals" component={GoalsPage} />
             <Route path="/app/finance" component={FinancePage} />
+            <Route path="/app/command" component={CommandCenterPage} />
             {/* Placeholder for other modules */}
             <Route path="/app/nutrition">
               <div className="p-8 text-muted-foreground">Nutrição (Em Breve)</div>

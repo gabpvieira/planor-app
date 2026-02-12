@@ -1,0 +1,106 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { OpenAI } from "https://esm.sh/openai@4.28.0"
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const SYSTEM_PROMPT = `Você é o cérebro do Planor, um assistente inteligente de produtividade.
+Sua única saída deve ser um JSON válido. Analise o comando do usuário e identifique a intenção.
+
+DATA ATUAL: 2026-02-12 (use como referência para "hoje", "amanhã", etc.)
+
+AÇÕES SUPORTADAS:
+
+1. FINANÇAS (action: "finance"):
+   - Lançar despesa: { action: "finance", type: "expense", amount: 50, description: "iFood", category: "alimentacao", date: "2026-02-12" }
+   - Lançar receita: { action: "finance", type: "income", amount: 1500, description: "Salário", category: "salario", date: "2026-02-12" }
+   
+   Categorias válidas: alimentacao, transporte, moradia, saude, educacao, lazer, compras, servicos, assinaturas, investimentos, salario, freelance, outros
+
+2. HÁBITOS (action: "habit"):
+   - Marcar como feito: { action: "habit", habit_name: "Correr", status: "complete", date: "2026-02-12" }
+   - Criar hábito: { action: "habit", operation: "create", title: "Meditar", frequency: "daily" }
+
+3. AGENDA (action: "agenda"):
+   - Criar evento: { action: "agenda", title: "Reunião", start_time: "2026-02-13T15:00:00", end_time: "2026-02-13T16:00:00", type: "event" }
+   - Bloquear horário: { action: "agenda", title: "Foco", start_time: "2026-02-12T14:00:00", end_time: "2026-02-12T16:00:00", type: "block" }
+
+4. COMANDOS MÚLTIPLOS:
+   Se o usuário der múltiplos comandos, retorne um array: { actions: [...] }
+
+5. NÃO ENTENDIDO:
+   Se não entender: { action: "unknown", message: "Não entendi, pode repetir?" }
+
+REGRAS:
+- Sempre infira a categoria mais apropriada para finanças
+- Use a data atual como padrão se não especificado
+- "Amanhã" = 2026-02-13, "Hoje" = 2026-02-12
+- Valores monetários devem ser números (sem R$)
+- Horários no formato ISO 8601
+
+Responda APENAS com JSON válido, sem texto adicional.`
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  try {
+    const { command } = await req.json()
+
+    if (!command || typeof command !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Comando inválido' }), 
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const apiKey = Deno.env.get('OPENAI_API_KEY')
+    if (!apiKey) {
+      return new Response(
+        JSON.stringify({ error: 'OPENAI_API_KEY não configurada' }), 
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
+    const openai = new OpenAI({ apiKey })
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: SYSTEM_PROMPT },
+        { role: "user", content: command },
+      ],
+      max_tokens: 1000,
+      temperature: 0.1,
+      response_format: { type: "json_object" },
+    })
+
+    const result = response.choices[0]?.message?.content || '{}'
+    const parsed = JSON.parse(result)
+
+    return new Response(JSON.stringify(parsed), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  } catch (error) {
+    console.error('Error processing command:', error)
+    return new Response(
+      JSON.stringify({ 
+        action: 'error',
+        message: 'Erro ao processar comando: ' + error.message 
+      }), 
+      {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
+  }
+})
