@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import ListeningOrb from '@/components/voice/ListeningOrb';
 import { useLocation } from 'wouter';
+import MicRecorder from 'mic-recorder-to-mp3';
 
 interface CommandAction {
   action: string;
@@ -37,65 +38,11 @@ export default function CommandCenterPage() {
   
   const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
+  const recorderRef = useRef<MicRecorder | null>(null);
 
   useEffect(() => {
-    // Initialize Speech Recognition
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = 'pt-BR';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const current = event.resultIndex;
-        const transcriptText = event.results[current][0].transcript;
-        console.log('[Voice] Transcript received:', transcriptText, 'isFinal:', event.results[current].isFinal);
-        
-        setTranscript(transcriptText);
-        finalTranscriptRef.current = transcriptText;
-
-        // If final result, process immediately
-        if (event.results[current].isFinal) {
-          console.log('[Voice] Final transcript detected, will process in 1 second');
-          
-          // Use a simple timeout without clearing
-          setTimeout(() => {
-            const commandToProcess = finalTranscriptRef.current.trim();
-            console.log('[Voice] Timeout fired, processing:', commandToProcess);
-            
-            if (commandToProcess) {
-              setIsListening(false);
-              processCommand(commandToProcess);
-            } else {
-              console.warn('[Voice] Empty transcript, not processing');
-              setIsListening(false);
-            }
-          }, 1000);
-        }
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error('[Voice] Speech recognition error:', event.error);
-        setIsListening(false);
-        
-        toast({
-          title: 'Erro no reconhecimento',
-          description: 'Não foi possível capturar o áudio. Tente novamente.',
-          variant: 'destructive',
-        });
-      };
-
-      recognitionRef.current.onend = () => {
-        console.log('[Voice] Recognition ended, isListening will be set to false');
-        // Small delay to allow final result to be processed
-        setTimeout(() => {
-          setIsListening(false);
-        }, 100);
-      };
-    }
+    // Initialize MicRecorder with 128kbps bitrate
+    recorderRef.current = new MicRecorder({ bitRate: 128 });
 
     // Keyboard shortcut: Space (hold)
     let spaceHoldTimer: NodeJS.Timeout;
@@ -120,105 +67,101 @@ export default function CommandCenterPage() {
     return () => {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
     };
   }, [isListening]);
 
   const startListening = async () => {
-    // Try to use OpenAI Whisper transcription (more accurate)
+    if (!recorderRef.current) {
+      toast({
+        title: 'Erro',
+        description: 'Gravador não inicializado. Recarregue a página.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        console.log('[Audio] Recording stopped, processing...');
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        
-        // Stop all tracks
-        stream.getTracks().forEach(track => track.stop());
-        
-        // Transcribe using OpenAI Whisper
-        await transcribeWithWhisper(audioBlob);
-      };
-
-      mediaRecorder.start();
+      // Start recording with mic-recorder-to-mp3
+      await recorderRef.current.start();
+      
+      // Activate Blue Orb animation
       setIsListening(true);
       setIsRecording(true);
       setTranscript('');
       setFeedbackList([]);
       finalTranscriptRef.current = '';
       
-      console.log('[Audio] Recording started');
-    } catch (error) {
+      console.log('[Audio] Recording started with mic-recorder-to-mp3');
+    } catch (error: any) {
       console.error('[Audio] Error accessing microphone:', error);
       
-      // Fallback to browser speech recognition
-      if (!recognitionRef.current) {
+      // Check if user denied microphone permission
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         toast({
-          title: 'Não suportado',
-          description: 'Seu navegador não suporta reconhecimento de voz. Use o campo de texto abaixo.',
+          title: '🎤 Permissão Negada',
+          description: 'Por favor, permita o acesso ao microfone nas configurações do navegador para usar o assistente de voz.',
           variant: 'destructive',
         });
-        setShowManualInput(true);
-        return;
+      } else {
+        toast({
+          title: 'Erro ao acessar microfone',
+          description: 'Não foi possível iniciar a gravação. Tente novamente ou use o campo de texto.',
+          variant: 'destructive',
+        });
       }
-
-      setTranscript('');
-      setFeedbackList([]);
-      finalTranscriptRef.current = '';
-      setIsListening(true);
       
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Error starting recognition:', error);
-        setIsListening(false);
-        setShowManualInput(true);
-        toast({
-          title: 'Erro ao iniciar',
-          description: 'Use o campo de texto para digitar seu comando.',
-          variant: 'destructive',
-        });
-      }
-    }
-  };
-
-  const stopListening = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      console.log('[Audio] Stopping recording...');
-      mediaRecorderRef.current.stop();
+      setShowManualInput(true);
+      setIsListening(false);
       setIsRecording(false);
     }
-    
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch (error) {
-        console.error('Error stopping recognition:', error);
-      }
-    }
-    setIsListening(false);
   };
 
-  const transcribeWithWhisper = async (audioBlob: Blob) => {
+  const stopListening = async () => {
+    if (!recorderRef.current || !isRecording) {
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      console.log('[Audio] Stopping recording...');
+      
+      // Stop recording and get MP3 blob
+      const [buffer, blob] = await recorderRef.current.stop().getMp3();
+      
+      setIsRecording(false);
+      
+      // Convert blob to File (use blob directly as it's already the correct format)
+      const file = new File([blob], 'audio.mp3', {
+        type: blob.type,
+        lastModified: Date.now(),
+      });
+
+      console.log('[Audio] MP3 file created:', file.size, 'bytes');
+      
+      // Send to Whisper for transcription
+      await transcribeWithWhisper(file);
+    } catch (error) {
+      console.error('[Audio] Error stopping recording:', error);
+      toast({
+        title: 'Erro ao parar gravação',
+        description: 'Não foi possível processar o áudio. Tente novamente.',
+        variant: 'destructive',
+      });
+      setIsListening(false);
+      setIsRecording(false);
+    }
+  };
+
+  const transcribeWithWhisper = async (audioFile: File) => {
     console.log('[Whisper] Transcribing audio...');
     setIsProcessing(true);
+    setIsListening(false);
     
     try {
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('audio', audioFile);
 
-      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
+      const { data, error } = await supabase.functions.invoke('process-command', {
         body: formData,
       });
 
@@ -244,7 +187,6 @@ export default function CommandCenterPage() {
       });
     } finally {
       setIsProcessing(false);
-      setIsListening(false);
     }
   };
 
