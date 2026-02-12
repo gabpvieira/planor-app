@@ -11,9 +11,6 @@ import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import ListeningOrb from '@/components/voice/ListeningOrb';
 import { useLocation } from 'wouter';
 
-// ✅ FIX: Lazy import para evitar erro SSR com mic-recorder-to-mp3
-let MicRecorder: any = null;
-
 interface CommandAction {
   action: string;
   [key: string]: any;
@@ -40,22 +37,12 @@ export default function CommandCenterPage() {
   const [isClient, setIsClient] = useState(false);
   
   const finalTranscriptRef = useRef<string>('');
-  const recorderRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
-  // ✅ FIX: Carrega MicRecorder apenas no client-side
+  // ✅ Inicializa apenas no client-side
   useEffect(() => {
     setIsClient(true);
-    
-    // Importa dinamicamente apenas no navegador
-    import('mic-recorder-to-mp3').then((module) => {
-      MicRecorder = module.default;
-      // Initialize MicRecorder with 128kbps bitrate
-      recorderRef.current = new MicRecorder({ bitRate: 128 });
-      console.log('[Audio] MicRecorder initialized');
-    }).catch((error) => {
-      console.error('[Audio] Failed to load MicRecorder:', error);
-      setShowManualInput(true);
-    });
   }, []);
 
   // Keyboard shortcut: Space (hold)
@@ -88,42 +75,76 @@ export default function CommandCenterPage() {
   }, [isListening, isClient]);
 
   const startListening = async () => {
-    if (!isClient || !recorderRef.current) {
+    if (!isClient) {
       toast({
         title: 'Carregando...',
-        description: 'Aguarde o gravador inicializar ou use o campo de texto.',
+        description: 'Aguarde a página carregar completamente.',
         variant: 'default',
       });
-      setShowManualInput(true);
       return;
     }
 
     try {
-      // Start recording with mic-recorder-to-mp3
-      await recorderRef.current.start();
+      // Request microphone access
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
-      // Activate Blue Orb animation
+      // Reset audio chunks
+      audioChunksRef.current = [];
+      
+      // Create MediaRecorder with webm format (widely supported)
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
+        ? 'audio/webm' 
+        : 'audio/mp4';
+      
+      const mediaRecorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = mediaRecorder;
+      
+      // Collect audio data
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+      
+      // Handle recording stop
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        
+        // Stop all tracks
+        stream.getTracks().forEach(track => track.stop());
+        
+        // Convert to file and transcribe
+        const audioFile = new File([audioBlob], 'audio.webm', {
+          type: mimeType,
+          lastModified: Date.now(),
+        });
+        
+        console.log('[Audio] Recording stopped, file size:', audioFile.size, 'bytes');
+        await transcribeWithWhisper(audioFile);
+      };
+      
+      // Start recording
+      mediaRecorder.start();
       setIsListening(true);
       setIsRecording(true);
       setTranscript('');
       setFeedbackList([]);
       finalTranscriptRef.current = '';
       
-      console.log('[Audio] Recording started with mic-recorder-to-mp3');
+      console.log('[Audio] Recording started with MediaRecorder');
     } catch (error: any) {
       console.error('[Audio] Error accessing microphone:', error);
       
-      // Check if user denied microphone permission
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
         toast({
           title: '🎤 Permissão Negada',
-          description: 'Por favor, permita o acesso ao microfone nas configurações do navegador para usar o assistente de voz.',
+          description: 'Por favor, permita o acesso ao microfone nas configurações do navegador.',
           variant: 'destructive',
         });
       } else {
         toast({
           title: 'Erro ao acessar microfone',
-          description: 'Não foi possível iniciar a gravação. Tente novamente ou use o campo de texto.',
+          description: 'Não foi possível iniciar a gravação. Use o campo de texto abaixo.',
           variant: 'destructive',
         });
       }
@@ -134,8 +155,8 @@ export default function CommandCenterPage() {
     }
   };
 
-  const stopListening = async () => {
-    if (!recorderRef.current || !isRecording) {
+  const stopListening = () => {
+    if (!mediaRecorderRef.current || !isRecording) {
       setIsListening(false);
       return;
     }
@@ -143,21 +164,13 @@ export default function CommandCenterPage() {
     try {
       console.log('[Audio] Stopping recording...');
       
-      // Stop recording and get MP3 blob
-      const [, blob] = await recorderRef.current.stop().getMp3();
+      // Stop the MediaRecorder (will trigger onstop event)
+      if (mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+      }
       
       setIsRecording(false);
-      
-      // Convert blob to File (use blob directly as it's already the correct format)
-      const file = new File([blob], 'audio.mp3', {
-        type: blob.type,
-        lastModified: Date.now(),
-      });
-
-      console.log('[Audio] MP3 file created:', file.size, 'bytes');
-      
-      // Send to Whisper for transcription
-      await transcribeWithWhisper(file);
+      setIsListening(false);
     } catch (error) {
       console.error('[Audio] Error stopping recording:', error);
       toast({
