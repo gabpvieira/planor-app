@@ -49,6 +49,38 @@
     
     <!-- Service Worker Registration -->
     <script>
+      // Cache busting - força reload se versão antiga
+      const APP_VERSION = '2.0.1'; // Incrementar quando houver mudanças críticas
+      const STORED_VERSION = localStorage.getItem('app_version');
+      
+      if (STORED_VERSION && STORED_VERSION !== APP_VERSION) {
+        console.log('[Cache] Detectada versão antiga, limpando cache...');
+        
+        // Limpa cache do service worker
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+              registration.unregister();
+            }
+          });
+        }
+        
+        // Limpa cache storage
+        if ('caches' in window) {
+          caches.keys().then(function(names) {
+            for (let name of names) {
+              caches.delete(name);
+            }
+          });
+        }
+        
+        // Atualiza versão e recarrega
+        localStorage.setItem('app_version', APP_VERSION);
+        window.location.reload(true);
+      } else if (!STORED_VERSION) {
+        localStorage.setItem('app_version', APP_VERSION);
+      }
+      
       // Registra o Service Worker apenas no browser, após o load
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
