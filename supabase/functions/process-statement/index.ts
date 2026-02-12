@@ -57,11 +57,11 @@ serve(async (req) => {
   }
 
   try {
-    const { text, imageBase64, mimeType, pdfBase64 } = await req.json()
+    const { text, imageBase64, mimeType } = await req.json()
 
-    if (!text && !imageBase64 && !pdfBase64) {
+    if (!text && !imageBase64) {
       return new Response(
-        JSON.stringify({ error: 'Nenhum texto, imagem ou PDF fornecido.' }), 
+        JSON.stringify({ error: 'Nenhum texto ou imagem fornecido.' }), 
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -84,35 +84,8 @@ serve(async (req) => {
 
     let result: string
 
-    // Process PDF with GPT-4 Vision (PDFs can be sent as base64)
-    if (pdfBase64) {
-      const imageResponse = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "Extraia todas as transações deste PDF de extrato bancário:" },
-              { 
-                type: "image_url", 
-                image_url: { 
-                  url: `data:application/pdf;base64,${pdfBase64}` 
-                } 
-              },
-            ],
-          },
-        ],
-        max_tokens: 4096,
-        temperature: 0.1,
-      })
-
-      const content = imageResponse.choices[0]?.message?.content || '{}'
-      const jsonMatch = content.match(/\{[\s\S]*\}/)
-      result = jsonMatch ? jsonMatch[0] : '{}'
-    }
     // Process image with GPT-4 Vision
-    else if (imageBase64) {
+    if (imageBase64) {
       const imageResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [

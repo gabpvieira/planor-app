@@ -91,13 +91,12 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
     setStep('processing');
 
     try {
-      let payload: { text?: string; imageBase64?: string; pdfBase64?: string; mimeType?: string } = {};
+      let payload: { text?: string; imageBase64?: string; mimeType?: string } = {};
 
       // Process based on file type
       if (file.type === 'application/pdf') {
-        const base64 = await fileToBase64(file);
-        // Remove the data:application/pdf;base64, prefix
-        payload = { pdfBase64: base64.split(',')[1], mimeType: file.type };
+        // PDFs are not supported directly - show error
+        throw new Error('PDFs não são suportados diretamente. Por favor, tire um print/screenshot do extrato e envie como imagem (PNG ou JPG).');
       } else if (file.type === 'text/csv' || file.type === 'text/plain') {
         const text = await file.text();
         payload = { text };
@@ -239,7 +238,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept=".pdf,.csv,.txt,.png,.jpg,.jpeg,.webp"
+                accept=".csv,.txt,.png,.jpg,.jpeg,.webp"
                 onChange={handleFileSelect}
               />
               <div className="flex flex-col items-center gap-3">
@@ -251,7 +250,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
                     Arraste seu extrato aqui ou clique para buscar
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    PDF, CSV ou Imagem (PNG, JPG) — máx. 10MB
+                    CSV, TXT ou Imagem (PNG, JPG, WEBP) — máx. 10MB
                   </p>
                 </div>
               </div>
