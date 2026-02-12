@@ -184,24 +184,79 @@ export default function CommandCenterPage() {
   };
 
   const transcribeWithWhisper = async (audioFile: File) => {
-    console.log('[Whisper] Transcribing audio...');
+    console.log('[Whisper] Starting transcription...');
+    console.log('[Whisper] Audio file:', {
+      name: audioFile.name,
+      size: audioFile.size,
+      type: audioFile.type
+    });
+    
     setIsProcessing(true);
     setIsListening(false);
     
     try {
+      // Verificar autenticação
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[Whisper] Auth status:', {
+        authenticated: !!session,
+        hasUser: !!user,
+        userId: user?.id
+      });
+
+      if (!session) {
+        console.error('[Whisper] User not authenticated');
+        toast({
+          title: 'Não autenticado',
+          description: 'Você precisa estar logado para usar o assistente de voz.',
+          variant: 'destructive',
+        });
+        setIsProcessing(false);
+        setShowManualInput(true);
+        return;
+      }
+
+      // Criar FormData com o áudio
       const formData = new FormData();
       formData.append('audio', audioFile);
 
-      const { data, error } = await supabase.functions.invoke('process-command', {
+      console.log('[Whisper] Invoking transcribe-audio Edge Function...');
+      
+      // Chamar Edge Function de transcrição
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
         body: formData,
       });
 
+      console.log('[Whisper] Response:', { data, error });
+
       if (error) {
-        console.error('[Whisper] Error:', error);
+        console.error('[Whisper] Error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText,
+          context: error.context
+        });
+        
+        // Tratamento específico para erro 401
+        if (error.status === 401) {
+          toast({
+            title: 'Erro de Autenticação',
+            description: 'Sua sessão expirou. Por favor, faça login novamente.',
+            variant: 'destructive',
+          });
+          setIsProcessing(false);
+          setShowManualInput(true);
+          return;
+        }
+        
         throw error;
       }
 
-      console.log('[Whisper] Transcription:', data.text);
+      if (!data || !data.text) {
+        console.error('[Whisper] Invalid response:', data);
+        throw new Error('Resposta inválida da transcrição');
+      }
+
+      console.log('[Whisper] Transcription successful:', data.text);
       setTranscript(data.text);
       finalTranscriptRef.current = data.text;
       
@@ -209,13 +264,24 @@ export default function CommandCenterPage() {
       if (data.text.trim()) {
         await processCommand(data.text);
       }
-    } catch (error) {
-      console.error('[Whisper] Transcription failed:', error);
+    } catch (error: any) {
+      console.error('[Whisper] Transcription failed:', {
+        error,
+        message: error?.message,
+        stack: error?.stack
+      });
+      
+      // Mensagem de erro amigável para o usuário
+      const errorMessage = error?.message || 'Erro desconhecido';
+      
       toast({
         title: 'Erro na transcrição',
-        description: 'Não foi possível transcrever o áudio. Tente novamente.',
+        description: `Não foi possível transcrever o áudio: ${errorMessage}. Tente novamente ou use o campo de texto.`,
         variant: 'destructive',
       });
+      
+      // Mostrar input manual como fallback
+      setShowManualInput(true);
     } finally {
       setIsProcessing(false);
     }
