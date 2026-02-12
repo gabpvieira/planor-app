@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import { BRASILIA_TIMEZONE } from "@shared/utils/timezone";
 
 const app = express();
 const httpServer = createServer(app);
@@ -24,11 +25,12 @@ app.use(
 app.use(express.urlencoded({ extended: false }));
 
 export function log(message: string, source = "express") {
-  const formattedTime = new Date().toLocaleTimeString("en-US", {
-    hour: "numeric",
+  const formattedTime = new Date().toLocaleTimeString("pt-BR", {
+    timeZone: BRASILIA_TIMEZONE,
+    hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
-    hour12: true,
+    hour12: false,
   });
 
   console.log(`${formattedTime} [${source}] ${message}`);

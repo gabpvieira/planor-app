@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, Dumbbell, CheckCircle2, Circle, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { toBrasiliaISOString } from '@shared/utils/timezone';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
 
@@ -54,7 +55,7 @@ export default function WorkoutsPage() {
       workout: {
         title,
         description: description || null,
-        date: new Date().toISOString(),
+        date: toBrasiliaISOString(),
         completed: false,
       },
       exercises: validExercises,

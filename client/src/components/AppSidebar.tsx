@@ -59,7 +59,15 @@ export function AppSidebar() {
         {/* Header */}
         <div className="planor-sidebar__header">
           <div className="planor-sidebar__brand">
-            <PlanorLogo size={120} />
+            {isCollapsed ? (
+              <img 
+                src="/favoricon.png" 
+                alt="Planor" 
+                className="planor-sidebar__favicon"
+              />
+            ) : (
+              <PlanorLogo size={100} />
+            )}
           </div>
           
           <div className="planor-sidebar__header-actions">

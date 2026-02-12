@@ -12,6 +12,7 @@ import {
   type KnowledgeItem, type InsertKnowledgeItem
 } from "@shared/schema";
 import { eq, and, desc, gte, lte } from "drizzle-orm";
+import { getBrasiliaDate } from "@shared/utils/timezone";
 
 export interface IStorage {
   // Appointments
@@ -268,7 +269,7 @@ export class DatabaseStorage implements IStorage {
   }
   async updateNote(id: number, userId: string, note: Partial<InsertNote>): Promise<Note | undefined> {
     const [updated] = await db.update(notes)
-      .set({ ...note, updatedAt: new Date() })
+      .set({ ...note, updatedAt: getBrasiliaDate() })
       .where(and(eq(notes.id, id), eq(notes.userId, userId)))
       .returning();
     return updated;
@@ -289,7 +290,7 @@ export class DatabaseStorage implements IStorage {
   }
   async updateKnowledgeItem(id: number, userId: string, item: Partial<InsertKnowledgeItem>): Promise<KnowledgeItem | undefined> {
     const [updated] = await db.update(knowledgeItems)
-      .set({ ...item, updatedAt: new Date() })
+      .set({ ...item, updatedAt: getBrasiliaDate() })
       .where(and(eq(knowledgeItems.id, id), eq(knowledgeItems.userId, userId)))
       .returning();
     return updated;

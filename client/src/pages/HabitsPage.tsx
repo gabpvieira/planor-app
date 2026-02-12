@@ -23,6 +23,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { getBrasiliaDateString } from '@shared/utils/timezone';
 
 // Mapeamento de ícones
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -157,7 +158,7 @@ function HabitCard({
   onDelete: () => void;
   isCompleting: boolean;
 }) {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getBrasiliaDateString();
   const isCompletedToday = habit.habit_logs?.some(
     (log) => log.date === today && log.completed
   );
@@ -980,7 +981,7 @@ export default function HabitsPage() {
   };
 
   const handleComplete = (habitId: number) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getBrasiliaDateString();
     completeHabit({ habitId, date: today }, {
       onSuccess: (result: any) => {
         if (!result.alreadyCompleted) {

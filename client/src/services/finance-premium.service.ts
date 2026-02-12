@@ -8,7 +8,7 @@ import type {
   CardInvoice, FinanceSummary, CashFlowItem, CategoryBreakdown,
   FINANCE_CATEGORIES
 } from '@/types/finance.types';
-import { addMonths, startOfMonth, endOfMonth, format, parseISO, isBefore, isAfter, addDays } from 'date-fns';
+import { getBrasiliaDate, toBrasiliaISOString } from '@shared/utils/timezone';import { addMonths, startOfMonth, endOfMonth, format, parseISO, isBefore, isAfter, addDays } from 'date-fns';
 
 // ============ ACCOUNTS SERVICE ============
 export const accountsService = {
@@ -55,7 +55,7 @@ export const accountsService = {
         amount: initialBalance,
         category: 'outros',
         description: `Saldo inicial - ${account.name}`,
-        date: new Date().toISOString(),
+        date: toBrasiliaISOString(),
         account_id: data.id,
         is_transfer: false,
         is_subscription: false,
@@ -69,7 +69,7 @@ export const accountsService = {
   async update(id: string, account: AccountUpdate): Promise<Account> {
     const { data, error } = await supabase
       .from('accounts')
-      .update({ ...account, updated_at: new Date().toISOString() })
+      .update({ ...account, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -99,7 +99,7 @@ export const accountsService = {
       
       await supabase
         .from('accounts')
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
+        .update({ balance: newBalance, updated_at: toBrasiliaISOString() })
         .eq('id', id);
     }
   }
@@ -131,7 +131,7 @@ export const creditCardsService = {
   async update(id: string, card: CreditCardUpdate): Promise<CreditCard> {
     const { data, error } = await supabase
       .from('credit_cards')
-      .update({ ...card, updated_at: new Date().toISOString() })
+      .update({ ...card, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -161,12 +161,12 @@ export const creditCardsService = {
       
       await supabase
         .from('credit_cards')
-        .update({ current_balance: Math.max(0, newBalance), updated_at: new Date().toISOString() })
+        .update({ current_balance: Math.max(0, newBalance), updated_at: toBrasiliaISOString() })
         .eq('id', id);
     }
   },
 
-  getInvoiceDates(card: CreditCard, referenceDate: Date = new Date()) {
+  getInvoiceDates(card: CreditCard, referenceDate: Date = getBrasiliaDate()) {
     const year = referenceDate.getFullYear();
     const month = referenceDate.getMonth();
     
@@ -207,7 +207,7 @@ export const recurringBillsService = {
   async update(id: string, bill: RecurringBillUpdate): Promise<RecurringBill> {
     const { data, error } = await supabase
       .from('recurring_bills')
-      .update({ ...bill, updated_at: new Date().toISOString() })
+      .update({ ...bill, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -223,7 +223,7 @@ export const recurringBillsService = {
     if (error) throw error;
   },
 
-  getNextDueDate(bill: RecurringBill, fromDate: Date = new Date()): Date {
+  getNextDueDate(bill: RecurringBill, fromDate: Date = getBrasiliaDate()): Date {
     const today = fromDate;
     const currentMonth = today.getMonth();
     const currentYear = today.getFullYear();
@@ -403,7 +403,7 @@ export const transactionsService = {
       amount,
       category: 'transferencia',
       description: description || 'Transferência entre contas',
-      date: new Date().toISOString(),
+      date: toBrasiliaISOString(),
       account_id: fromAccountId,
       is_transfer: true,
       transfer_to_account_id: toAccountId,
@@ -417,7 +417,7 @@ export const transactionsService = {
       amount,
       category: 'transferencia',
       description: description || 'Transferência entre contas',
-      date: new Date().toISOString(),
+      date: toBrasiliaISOString(),
       account_id: toAccountId,
       is_transfer: true,
       paid: true,
@@ -431,7 +431,7 @@ export const transactionsService = {
   async update(id: number, transaction: TransactionUpdate): Promise<FinanceTransaction> {
     const { data, error } = await supabase
       .from('finance_transactions')
-      .update({ ...transaction, updated_at: new Date().toISOString() })
+      .update({ ...transaction, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();
@@ -519,8 +519,8 @@ export const financeAnalyticsService = {
       creditCardsService.list(userId),
       recurringBillsService.list(userId),
       transactionsService.list(userId, 
-        format(startOfMonth(new Date()), 'yyyy-MM-dd'),
-        format(endOfMonth(new Date()), 'yyyy-MM-dd')
+        format(startOfMonth(getBrasiliaDate()), 'yyyy-MM-dd'),
+        format(endOfMonth(getBrasiliaDate()), 'yyyy-MM-dd')
       ),
     ]);
 
@@ -557,7 +557,7 @@ export const financeAnalyticsService = {
 
   async getCashFlow(userId: string, months: number = 6): Promise<CashFlowItem[]> {
     const items: CashFlowItem[] = [];
-    const today = new Date();
+    const today = getBrasiliaDate();
     
     for (let i = 0; i < months; i++) {
       const monthDate = addMonths(today, i);
@@ -639,7 +639,7 @@ export const financeAnalyticsService = {
 
   async getUpcomingBills(userId: string, days: number = 30): Promise<Array<RecurringBill & { nextDue: Date }>> {
     const bills = await recurringBillsService.list(userId);
-    const today = new Date();
+    const today = getBrasiliaDate();
     const limit = addDays(today, days);
     
     return bills
@@ -695,7 +695,7 @@ export const categoriesService = {
   async update(id: string, category: FinanceCategoryUpdate): Promise<FinanceCategory> {
     const { data, error } = await supabase
       .from('finance_categories')
-      .update({ ...category, updated_at: new Date().toISOString() })
+      .update({ ...category, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();

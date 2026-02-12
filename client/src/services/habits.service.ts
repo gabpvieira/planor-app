@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
+import { getBrasiliaDate, getBrasiliaDateString } from '@shared/utils/timezone';
 
 type Habit = Database['public']['Tables']['habits']['Row'];
 type HabitInsert = Database['public']['Tables']['habits']['Insert'];
@@ -138,7 +139,7 @@ export const habitsService = {
     if (logError) throw logError;
 
     // Calcular novo streak
-    const yesterday = new Date(date);
+    const yesterday = getBrasiliaDate();
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayStr = yesterday.toISOString().split('T')[0];
 
@@ -163,7 +164,7 @@ export const habitsService = {
         current_streak: newStreak,
         longest_streak: newLongestStreak,
         total_completions: newTotalCompletions,
-        last_completed_at: new Date().toISOString(),
+        last_completed_at: getBrasiliaDate().toISOString(),
       } as any)
       .eq('id', habitId)
       .select()
@@ -176,8 +177,8 @@ export const habitsService = {
 
   // Buscar logs dos últimos N dias
   async getRecentLogs(habitId: number, days: number = 7) {
-    const endDate = new Date().toISOString().split('T')[0];
-    const startDate = new Date();
+    const endDate = getBrasiliaDateString();
+    const startDate = getBrasiliaDate();
     startDate.setDate(startDate.getDate() - days);
     const startDateStr = startDate.toISOString().split('T')[0];
 
@@ -195,7 +196,7 @@ export const habitsService = {
 
   // Buscar histórico completo para heatmap
   async getHeatmapData(userId: string, year?: number) {
-    const targetYear = year || new Date().getFullYear();
+    const targetYear = year || getBrasiliaDate().getFullYear();
     const startDate = `${targetYear}-01-01`;
     const endDate = `${targetYear}-12-31`;
 

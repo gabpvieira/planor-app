@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database, GoalMilestone } from '@/types/database.types';
+import { getBrasiliaDate } from '@shared/utils/timezone';
 
 type Goal = Database['public']['Tables']['goals']['Row'];
 type GoalInsert = Database['public']['Tables']['goals']['Insert'];
@@ -27,7 +28,7 @@ function calculateProgress(goal: Goal): number {
 // Calculate days remaining until deadline
 function calculateDaysRemaining(deadline: string | null): number | null {
   if (!deadline) return null;
-  const today = new Date();
+  const today = getBrasiliaDate();
   today.setHours(0, 0, 0, 0);
   const deadlineDate = new Date(deadline);
   deadlineDate.setHours(0, 0, 0, 0);

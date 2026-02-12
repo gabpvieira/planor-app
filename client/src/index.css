@@ -2337,16 +2337,29 @@ kbd {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
-  min-height: 64px;
+  padding: 12px;
+  min-height: 56px;
   border-bottom: 1px solid var(--sidebar-border);
+}
+
+.planor-sidebar--collapsed .planor-sidebar__header {
+  justify-content: center;
+  padding: 12px 8px;
 }
 
 .planor-sidebar__brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   overflow: hidden;
+}
+
+.planor-sidebar__favicon {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .planor-sidebar__logo {
@@ -2816,15 +2829,20 @@ kbd {
 }
 
 /* === SIDEBAR BRAND OVERRIDE === */
-/* Remove estilos antigos do logo quando usando o novo componente */
+/* Ajusta o logo no sidebar */
 .planor-sidebar__brand .planor-logo-container {
-  gap: 12px;
+  gap: 0;
 }
 
 .planor-sidebar__brand .planor-logo {
-  width: 32px;
-  height: 32px;
-  min-width: 32px;
+  width: auto;
+  height: auto;
+  min-width: auto;
+}
+
+.planor-sidebar__brand .planor-logo__image {
+  max-height: 32px;
+  width: auto;
 }
 
 /* === LANDING PAGE / HEADER LOGO === */

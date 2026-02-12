@@ -14,7 +14,7 @@ import { ptBR } from 'date-fns/locale';
 import {
   Loader2, Plus, TrendingUp, TrendingDown, Wallet, CreditCard, Receipt,
   ArrowRightLeft, Calendar, PieChart, BarChart3, AlertCircle,
-  Building2, PiggyBank, Trash2, Edit2, Sparkles, Eye, EyeOff, Tag, Activity
+  Building2, PiggyBank, Trash2, Edit2, Sparkles, Eye, EyeOff, Tag, Activity, Upload
 } from 'lucide-react';
 import FinanceAnalytics from '@/components/finance/FinanceAnalytics';
 import { CardCarousel } from '@/components/finance/PremiumCreditCard';
@@ -23,6 +23,8 @@ import { FINANCE_CATEGORIES, ACCOUNT_TYPES, CARD_BRANDS } from '@/types/finance.
 import type { AccountInsert, CreditCardInsert, RecurringBillInsert, TransactionInsert, FinanceCategoryInsert } from '@/types/finance.types';
 import { BankSelect, type BrazilianBank } from '@/components/ui/bank-select';
 import { getBankBySlug } from '@/data/brazilian-banks';
+import { getBrasiliaDateString } from '@shared/utils/timezone';
+import StatementImport from '@/components/finance/StatementImport';
 
 // Currency formatter
 const formatCurrency = (value: number) => {
@@ -617,7 +619,7 @@ function RecurringBillsSection({ bills, accounts, cards, onCreateBill, onDeleteB
     card_id: null,
     auto_post: false,
     is_active: true,
-    start_date: new Date().toISOString().split('T')[0],
+    start_date: getBrasiliaDateString(),
     end_date: null,
   });
   const { toast } = useToast();
@@ -631,7 +633,7 @@ function RecurringBillsSection({ bills, accounts, cards, onCreateBill, onDeleteB
         setForm({
           description: '', amount: 0, frequency: 'mensal', due_day: 1, category: 'outros',
           account_id: null, card_id: null, auto_post: false, is_active: true,
-          start_date: new Date().toISOString().split('T')[0], end_date: null,
+          start_date: getBrasiliaDateString(), end_date: null,
         });
       },
     });
@@ -778,7 +780,7 @@ function TransactionsSection({
     amount: 0,
     category: 'outros',
     description: '',
-    date: new Date().toISOString().split('T')[0],
+    date: getBrasiliaDateString(),
     account_id: null,
     card_id: null,
     installments_total: 1,
@@ -793,6 +795,7 @@ function TransactionsSection({
     installments: 1,
   });
   const { toast } = useToast();
+  const [importOpen, setImportOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -878,7 +881,7 @@ function TransactionsSection({
   const resetForm = () => {
     setForm({
       type: 'expense', amount: 0, category: 'outros', description: '',
-      date: new Date().toISOString().split('T')[0], account_id: null, card_id: null,
+      date: getBrasiliaDateString(), account_id: null, card_id: null,
       installments_total: 1, installment_current: 1, parent_transaction_id: null,
       is_subscription: false, is_transfer: false, transfer_to_account_id: null,
       recurring_bill_id: null, paid: true, due_date: null, installments: 1,
@@ -892,7 +895,14 @@ function TransactionsSection({
           <BarChart3 className="size-5 finance-icon" />
           Transações
         </h3>
-        <Dialog open={isOpen} onOpenChange={handleDialogClose}>
+        <div className="flex items-center gap-2">
+          <button
+            className="finance-btn finance-btn-secondary flex items-center gap-1.5"
+            onClick={() => setImportOpen(true)}
+          >
+            <Upload className="size-4" /> Importar Extrato
+          </button>
+          <Dialog open={isOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
             <button className="finance-btn finance-btn-primary flex items-center gap-1.5">
               <Plus className="size-4" /> Nova
@@ -1107,6 +1117,7 @@ function TransactionsSection({
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <ScrollArea className="h-[400px]">
@@ -1154,6 +1165,11 @@ function TransactionsSection({
                             <Sparkles className="size-3 mr-1" /> Assinatura
                           </span>
                         )}
+                        {transaction.description?.includes('✨') && (
+                          <span className="finance-badge finance-badge-neutral text-primary">
+                            <Sparkles className="size-3 mr-0.5" /> IA
+                          </span>
+                        )}
                       </div>
                       <p className="finance-label-small">
                         {format(parseISO(transaction.date), "d 'de' MMM", { locale: ptBR })}
@@ -1186,6 +1202,11 @@ function TransactionsSection({
           </div>
         )}
       </ScrollArea>
+      <StatementImport
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        accountId={null}
+      />
     </div>
   );
 }

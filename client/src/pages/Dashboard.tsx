@@ -2,16 +2,19 @@ import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useSupabaseTasks } from "@/hooks/use-supabase-tasks";
 import { useSupabaseHabits } from "@/hooks/use-supabase-habits";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CheckCircle2, Circle, Clock, CalendarDays, ArrowRight, Target } from "lucide-react";
+import { CheckCircle2, Circle, Clock, CalendarDays, ArrowRight, Target, Upload } from "lucide-react";
 import { format } from "date-fns";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useState } from "react";
+import StatementImport from "@/components/finance/StatementImport";
 
 export default function Dashboard() {
   const { user } = useSupabaseAuth();
   const { tasks } = useSupabaseTasks();
   const { habits } = useSupabaseHabits();
+  const [importOpen, setImportOpen] = useState(false);
 
   const today = new Date();
   const formattedDate = format(today, "EEEE, d 'de' MMMM");
@@ -42,6 +45,9 @@ export default function Dashboard() {
                 Nova Tarefa
              </Button>
           </Link>
+          <Button variant="outline" onClick={() => setImportOpen(true)} className="gap-2">
+            <Upload className="size-4" /> Importar Extrato
+          </Button>
         </div>
       </header>      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Daily Insight Card */}
@@ -145,6 +151,20 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* FAB - Importar Extrato */}
+      <motion.button
+        className="fixed bottom-6 right-6 z-50 size-14 rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/25 flex items-center justify-center hover:scale-105 active:scale-95 transition-transform md:hidden"
+        onClick={() => setImportOpen(true)}
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.3, type: 'spring' }}
+        aria-label="Importar Extrato"
+      >
+        <Upload className="size-6" />
+      </motion.button>
+
+      <StatementImport open={importOpen} onOpenChange={setImportOpen} />
     </div>
   );
 }

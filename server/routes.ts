@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { api } from "@shared/routes";
 import { z } from "zod";
 import { setupAuth, registerAuthRoutes, isAuthenticated, getUserId } from "./auth";
+import { toBrasiliaDate } from "@shared/utils/timezone";
+import { registerStatementRoutes } from "./statement-import";
 
 export async function registerRoutes(
   httpServer: Server,
@@ -13,6 +15,7 @@ export async function registerRoutes(
   // Setup Auth
   setupAuth(app);
   registerAuthRoutes(app);
+  registerStatementRoutes(app);
 
   // Middleware to ensure authentication for API routes
   const requireAuth = isAuthenticated;
@@ -20,8 +23,8 @@ export async function registerRoutes(
   // === APPOINTMENTS ===
   app.get(api.appointments.list.path, requireAuth, async (req, res) => {
     const userId = getUserId(req);
-    const startDate = req.query.startDate ? new Date(req.query.startDate as string) : undefined;
-    const endDate = req.query.endDate ? new Date(req.query.endDate as string) : undefined;
+    const startDate = req.query.startDate ? toBrasiliaDate(req.query.startDate as string) : undefined;
+    const endDate = req.query.endDate ? toBrasiliaDate(req.query.endDate as string) : undefined;
     const items = await storage.getAppointments(userId, startDate, endDate);
     res.json(items);
   });

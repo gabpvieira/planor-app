@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
+import { getBrasiliaDate } from '@shared/utils/timezone';
 
 type Task = Database['public']['Tables']['tasks']['Row'];
 type TaskInsert = Database['public']['Tables']['tasks']['Insert'];
@@ -66,7 +67,7 @@ export const tasksService = {
       .from('tasks')
       .update({
         ...task,
-        updated_at: new Date().toISOString()
+        updated_at: getBrasiliaDate().toISOString()
       } as any)
       .eq('id', id)
       .select('*, projects(*)')

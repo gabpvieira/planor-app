@@ -185,6 +185,17 @@ export const financeTransactions = pgTable("finance_transactions", {
   category: text("category").notNull(),
   description: text("description"),
   date: timestamp("date").notNull(),
+  accountId: text("account_id"),
+  cardId: text("card_id"),
+  installmentsTotal: integer("installments_total").default(1),
+  installmentCurrent: integer("installment_current").default(1),
+  parentTransactionId: integer("parent_transaction_id"),
+  isSubscription: boolean("is_subscription").default(false),
+  isTransfer: boolean("is_transfer").default(false),
+  transferToAccountId: text("transfer_to_account_id"),
+  recurringBillId: integer("recurring_bill_id"),
+  paid: boolean("paid").default(true),
+  dueDate: timestamp("due_date"),
 });
 
 export const insertFinanceTransactionSchema = createInsertSchema(financeTransactions).omit({ id: true });

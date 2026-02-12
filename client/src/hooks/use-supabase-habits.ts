@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { habitsService, HabitWithLogs } from '@/services/habits.service';
 import { useSupabaseAuth } from './use-supabase-auth';
 import type { Database } from '@/types/database.types';
+import { getBrasiliaDateString, toBrasiliaISOString } from '@shared/utils/timezone';
 
 type HabitInsert = Database['public']['Tables']['habits']['Insert'];
 type HabitUpdate = Database['public']['Tables']['habits']['Update'];
@@ -64,7 +65,7 @@ export function useSupabaseHabits() {
                   ...habit,
                   habit_logs: [
                     ...habit.habit_logs,
-                    { id: Date.now(), habit_id: habitId, date, count: 1, completed: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+                    { id: Date.now(), habit_id: habitId, date, count: 1, completed: true, created_at: toBrasiliaISOString(), updated_at: toBrasiliaISOString() },
                   ],
                 }
               : habit
@@ -94,7 +95,7 @@ export function useSupabaseHabits() {
   };
 
   // Verificar se todos os hábitos do dia foram completados
-  const today = new Date().toISOString().split('T')[0];
+  const today = getBrasiliaDateString();
   const completedToday = habits.filter((habit) =>
     habit.habit_logs?.some((log) => log.date === today && log.completed)
   ).length;

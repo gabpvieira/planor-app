@@ -45,7 +45,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="eugabrieldpv@gmail.com"
+                placeholder="seu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -58,7 +58,7 @@ export default function LoginPage() {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••"
+                placeholder="Sua senha"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -91,17 +91,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/50">
-            <p className="text-sm font-medium text-muted-foreground mb-2">
-              Credenciais de desenvolvimento:
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Email: <span className="font-mono font-semibold text-foreground">eugabrieldpv@gmail.com</span>
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Senha: <span className="font-mono font-semibold text-foreground">@gab123654</span>
-            </p>
-          </div>
+
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/types/database.types';
+import { getBrasiliaStartOfDay, getBrasiliaEndOfDay } from '@shared/utils/timezone';
 
 type Meal = Database['public']['Tables']['meals']['Row'];
 type MealInsert = Database['public']['Tables']['meals']['Insert'];
@@ -13,10 +14,8 @@ export const mealsService = {
       .eq('user_id', userId);
 
     if (date) {
-      const startOfDay = new Date(date);
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(date);
-      endOfDay.setHours(23, 59, 59, 999);
+      const startOfDay = getBrasiliaStartOfDay(date);
+      const endOfDay = getBrasiliaEndOfDay(date);
 
       query = query
         .gte('date', startOfDay.toISOString())
