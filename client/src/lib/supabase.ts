@@ -6,7 +6,38 @@ import type { Database } from '@/types/database.types';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
+// ✅ FIX: Cria cliente dummy para produção quando variáveis estão ausentes
+const createDummyClient = (errorMessage: string) => {
+  return {
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: new Error(errorMessage) }),
+      getUser: async () => ({ data: { user: null }, error: new Error(errorMessage) }),
+      signIn: async () => ({ data: null, error: new Error(errorMessage) }),
+      signUp: async () => ({ data: null, error: new Error(errorMessage) }),
+      signOut: async () => ({ error: new Error(errorMessage) }),
+      onAuthStateChange: () => ({ 
+        data: { 
+          subscription: { 
+            unsubscribe: () => console.log('[Supabase] Dummy unsubscribe') 
+          } 
+        } 
+      }),
+    },
+    from: () => ({
+      select: () => ({ data: null, error: new Error(errorMessage) }),
+      insert: () => ({ data: null, error: new Error(errorMessage) }),
+      update: () => ({ data: null, error: new Error(errorMessage) }),
+      delete: () => ({ data: null, error: new Error(errorMessage) }),
+    }),
+    functions: {
+      invoke: async () => ({ data: null, error: new Error(errorMessage) }),
+    },
+  } as any;
+};
+
 // Validate environment variables
+let supabaseClient: any;
+
 if (!supabaseUrl || !supabaseAnonKey) {
   const errorMessage = import.meta.env.PROD
     ? 'Application configuration error. Please contact support.'
@@ -15,17 +46,25 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('[Supabase] Missing environment variables:', {
     hasUrl: !!supabaseUrl,
     hasKey: !!supabaseAnonKey,
-    mode: import.meta.env.MODE
+    mode: import.meta.env.MODE,
+    prod: import.meta.env.PROD
   });
   
-  throw new Error(errorMessage);
+  // ✅ FIX: Em produção, usa cliente dummy ao invés de quebrar
+  if (import.meta.env.PROD) {
+    console.error('[Supabase] CRITICAL: Missing credentials in production! Using dummy client.');
+    supabaseClient = createDummyClient(errorMessage);
+  } else {
+    throw new Error(errorMessage);
+  }
+} else {
+  supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  });
 }
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-  auth: {
-    persistSession: true,
-    autoRefreshToken: true,
-    detectSessionInUrl: true,
-  },
-});
-
+export const supabase = supabaseClient;

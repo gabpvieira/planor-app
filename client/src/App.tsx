@@ -44,9 +44,9 @@ function AuthenticatedApp() {
         <main 
           className="flex-1 bg-background transition-all md:ml-[var(--sidebar-width-collapsed)] lg:ml-[var(--sidebar-width-expanded)]"
           style={{ 
-            marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 
-              ? (isCollapsed ? 'var(--sidebar-width-collapsed, 72px)' : 'var(--sidebar-width-expanded, 240px)')
-              : '0',
+            marginLeft: isCollapsed 
+              ? 'var(--sidebar-width-collapsed, 72px)' 
+              : 'var(--sidebar-width-expanded, 240px)',
             transitionDuration: '220ms',
             transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
           }}

@@ -10,7 +10,9 @@ import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import ListeningOrb from '@/components/voice/ListeningOrb';
 import { useLocation } from 'wouter';
-import MicRecorder from 'mic-recorder-to-mp3';
+
+// ✅ FIX: Lazy import para evitar erro SSR com mic-recorder-to-mp3
+let MicRecorder: any = null;
 
 interface CommandAction {
   action: string;
@@ -35,16 +37,31 @@ export default function CommandCenterPage() {
   const [manualInput, setManualInput] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   
-  const recognitionRef = useRef<any>(null);
   const finalTranscriptRef = useRef<string>('');
-  const recorderRef = useRef<MicRecorder | null>(null);
+  const recorderRef = useRef<any>(null);
 
+  // ✅ FIX: Carrega MicRecorder apenas no client-side
   useEffect(() => {
-    // Initialize MicRecorder with 128kbps bitrate
-    recorderRef.current = new MicRecorder({ bitRate: 128 });
+    setIsClient(true);
+    
+    // Importa dinamicamente apenas no navegador
+    import('mic-recorder-to-mp3').then((module) => {
+      MicRecorder = module.default;
+      // Initialize MicRecorder with 128kbps bitrate
+      recorderRef.current = new MicRecorder({ bitRate: 128 });
+      console.log('[Audio] MicRecorder initialized');
+    }).catch((error) => {
+      console.error('[Audio] Failed to load MicRecorder:', error);
+      setShowManualInput(true);
+    });
+  }, []);
 
-    // Keyboard shortcut: Space (hold)
+  // Keyboard shortcut: Space (hold)
+  useEffect(() => {
+    if (!isClient) return;
+
     let spaceHoldTimer: NodeJS.Timeout;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !isListening && e.target === document.body) {
@@ -68,15 +85,16 @@ export default function CommandCenterPage() {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isListening]);
+  }, [isListening, isClient]);
 
   const startListening = async () => {
-    if (!recorderRef.current) {
+    if (!isClient || !recorderRef.current) {
       toast({
-        title: 'Erro',
-        description: 'Gravador não inicializado. Recarregue a página.',
-        variant: 'destructive',
+        title: 'Carregando...',
+        description: 'Aguarde o gravador inicializar ou use o campo de texto.',
+        variant: 'default',
       });
+      setShowManualInput(true);
       return;
     }
 
@@ -126,7 +144,7 @@ export default function CommandCenterPage() {
       console.log('[Audio] Stopping recording...');
       
       // Stop recording and get MP3 blob
-      const [buffer, blob] = await recorderRef.current.stop().getMp3();
+      const [, blob] = await recorderRef.current.stop().getMp3();
       
       setIsRecording(false);
       

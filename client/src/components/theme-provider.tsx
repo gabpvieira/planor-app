@@ -28,11 +28,19 @@ export function ThemeProvider({
   storageKey = "planor-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
-  );
-
+  // ✅ FIX: Inicializa com defaultTheme (sem localStorage) para evitar erro de hidratação
+  const [theme, setTheme] = useState<Theme>(defaultTheme);
   const [resolvedTheme, setResolvedTheme] = useState<"dark" | "light">("light");
+  const [mounted, setMounted] = useState(false);
+
+  // ✅ FIX: Carrega do localStorage apenas após montar no client-side
+  useEffect(() => {
+    setMounted(true);
+    const stored = localStorage.getItem(storageKey) as Theme;
+    if (stored && (stored === 'dark' || stored === 'light' || stored === 'system')) {
+      setTheme(stored);
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -79,6 +87,11 @@ export function ThemeProvider({
     },
     resolvedTheme,
   };
+
+  // ✅ FIX: Previne flash durante hidratação - renderiza children apenas após montar
+  if (!mounted) {
+    return <>{children}</>;
+  }
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
