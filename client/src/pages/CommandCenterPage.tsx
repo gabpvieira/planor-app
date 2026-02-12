@@ -56,23 +56,36 @@ export default function CommandCenterPage() {
         // Clear any existing timeout
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
         }
 
-        // If final result, wait 2 seconds before processing
+        // If final result, wait 1.5 seconds before processing
         if (event.results[current].isFinal) {
-          console.log('Final transcript:', transcriptText);
+          console.log('[Voice] Final transcript:', transcriptText);
+          setIsListening(false); // Stop listening indicator
+          
           processingTimeoutRef.current = setTimeout(() => {
-            console.log('Processing command after delay:', finalTranscriptRef.current);
+            console.log('[Voice] Processing command:', finalTranscriptRef.current);
             if (finalTranscriptRef.current.trim()) {
               processCommand(finalTranscriptRef.current);
+            } else {
+              console.warn('[Voice] Empty transcript, not processing');
             }
-          }, 2000);
+            processingTimeoutRef.current = null;
+          }, 1500);
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
-        console.error('Speech recognition error:', event.error);
+        console.error('[Voice] Speech recognition error:', event.error);
         setIsListening(false);
+        
+        // Clear timeout on error
+        if (processingTimeoutRef.current) {
+          clearTimeout(processingTimeoutRef.current);
+          processingTimeoutRef.current = null;
+        }
+        
         toast({
           title: 'Erro no reconhecimento',
           description: 'Não foi possível capturar o áudio. Tente novamente.',
@@ -81,6 +94,8 @@ export default function CommandCenterPage() {
       };
 
       recognitionRef.current.onend = () => {
+        console.log('[Voice] Recognition ended');
+        // Don't clear timeout here - let it complete
         setIsListening(false);
       };
     }
@@ -172,16 +187,24 @@ export default function CommandCenterPage() {
   };
 
   const processCommand = async (command: string) => {
+    console.log('[Command] Starting to process:', command);
     setIsProcessing(true);
 
     try {
+      console.log('[Command] Invoking Supabase function...');
       const { data, error } = await supabase.functions.invoke('process-command', {
         body: { command },
       });
 
-      if (error) throw error;
+      console.log('[Command] Response:', { data, error });
+
+      if (error) {
+        console.error('[Command] Supabase error:', error);
+        throw error;
+      }
 
       const result: CommandResult = data;
+      console.log('[Command] Parsed result:', result);
 
       // Handle multiple actions
       if (result.actions && Array.isArray(result.actions)) {
@@ -211,12 +234,13 @@ export default function CommandCenterPage() {
         }
       }
     } catch (error: any) {
-      console.error('Error processing command:', error);
+      console.error('[Command] Error processing command:', error);
       setFeedback({
         type: 'error',
         message: 'Erro ao processar comando. Tente novamente.',
       });
     } finally {
+      console.log('[Command] Processing complete');
       setIsProcessing(false);
     }
   };
