@@ -36,7 +36,7 @@ const categoryOptions = Object.entries(FINANCE_CATEGORIES).map(([slug, data]) =>
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-export default function StatementImport({ open, onOpenChange, accountId }: StatementImportProps) {
+export default function StatementImport({ open, onOpenChange, accountId: initialAccountId }: StatementImportProps) {
   const { user } = useSupabaseAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -47,6 +47,8 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
   const [isDragging, setIsDragging] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [fileName, setFileName] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(initialAccountId || null);
+  const [accounts, setAccounts] = useState<Array<{ id: string; name: string; bank: string }>>([]);
 
   const resetState = useCallback(() => {
     setStep('upload');
@@ -54,7 +56,30 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
     setIsDragging(false);
     setIsSaving(false);
     setFileName('');
-  }, []);
+    setSelectedAccountId(initialAccountId || null);
+  }, [initialAccountId]);
+
+  // Load user accounts
+  React.useEffect(() => {
+    if (open && user?.id) {
+      loadAccounts();
+    }
+  }, [open, user?.id]);
+
+  const loadAccounts = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('finance_accounts')
+        .select('id, name, bank')
+        .eq('user_id', user?.id)
+        .order('name');
+
+      if (error) throw error;
+      setAccounts(data || []);
+    } catch (error) {
+      console.error('Error loading accounts:', error);
+    }
+  };
 
   const handleClose = useCallback(() => {
     resetState();
@@ -143,7 +168,7 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
         category: t.category,
         description: `${t.description} ✨`,
         date: t.date,
-        account_id: accountId || null,
+        account_id: selectedAccountId,
         card_id: null,
         installments_total: 1,
         installment_current: 1,
@@ -255,16 +280,43 @@ export default function StatementImport({ open, onOpenChange, accountId }: State
         {/* Review Step */}
         {step === 'review' && (
           <>
-            <div className="px-6 pt-4 pb-2 flex flex-wrap items-center gap-3 text-xs">
-              <Badge variant="outline" className="gap-1">
-                <Bot className="size-3" /> {transactions.length} transações
-              </Badge>
-              <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">
-                ↑ {formatCurrency(totalIncome)}
-              </Badge>
-              <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800">
-                ↓ {formatCurrency(totalExpense)}
-              </Badge>
+            <div className="px-6 pt-4 pb-2 space-y-3">
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <Badge variant="outline" className="gap-1">
+                  <Bot className="size-3" /> {transactions.length} transações
+                </Badge>
+                <Badge variant="outline" className="text-emerald-600 border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30 dark:border-emerald-800">
+                  ↑ {formatCurrency(totalIncome)}
+                </Badge>
+                <Badge variant="outline" className="text-red-600 border-red-200 bg-red-50 dark:bg-red-950/30 dark:border-red-800">
+                  ↓ {formatCurrency(totalExpense)}
+                </Badge>
+              </div>
+
+              {/* Account Selector */}
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-muted-foreground shrink-0">
+                  Conta:
+                </label>
+                <Select
+                  value={selectedAccountId || 'none'}
+                  onValueChange={(v) => setSelectedAccountId(v === 'none' ? null : v)}
+                >
+                  <SelectTrigger className="h-9 text-sm flex-1">
+                    <SelectValue placeholder="Selecione uma conta (opcional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-sm">
+                      Sem conta vinculada
+                    </SelectItem>
+                    {accounts.map(account => (
+                      <SelectItem key={account.id} value={account.id} className="text-sm">
+                        {account.bank} - {account.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
             <ScrollArea className="flex-1 max-h-[50vh]">
