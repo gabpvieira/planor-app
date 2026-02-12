@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, MicOff, Sparkles, Check, X, Loader2, ArrowRight } from 'lucide-react';
+import { Mic, MicOff, Sparkles, Check, X, Loader2, ArrowRight, Keyboard, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
@@ -30,9 +31,12 @@ export default function CommandCenterPage() {
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string; action?: CommandAction } | null>(null);
+  const [manualInput, setManualInput] = useState('');
+  const [showManualInput, setShowManualInput] = useState(false);
   
   const recognitionRef = useRef<any>(null);
   const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
     // Initialize Speech Recognition
@@ -47,17 +51,22 @@ export default function CommandCenterPage() {
         const current = event.resultIndex;
         const transcriptText = event.results[current][0].transcript;
         setTranscript(transcriptText);
+        finalTranscriptRef.current = transcriptText;
 
         // Clear any existing timeout
         if (processingTimeoutRef.current) {
           clearTimeout(processingTimeoutRef.current);
         }
 
-        // If final result, wait 3 seconds before processing to ensure user finished speaking
+        // If final result, wait 2 seconds before processing
         if (event.results[current].isFinal) {
+          console.log('Final transcript:', transcriptText);
           processingTimeoutRef.current = setTimeout(() => {
-            processCommand(transcriptText);
-          }, 3000);
+            console.log('Processing command after delay:', finalTranscriptRef.current);
+            if (finalTranscriptRef.current.trim()) {
+              processCommand(finalTranscriptRef.current);
+            }
+          }, 2000);
         }
       };
 
@@ -112,27 +121,54 @@ export default function CommandCenterPage() {
     if (!recognitionRef.current) {
       toast({
         title: 'Não suportado',
-        description: 'Seu navegador não suporta reconhecimento de voz.',
+        description: 'Seu navegador não suporta reconhecimento de voz. Use o campo de texto abaixo.',
         variant: 'destructive',
       });
+      setShowManualInput(true);
       return;
     }
 
     setTranscript('');
     setFeedback(null);
+    finalTranscriptRef.current = '';
     setIsListening(true);
-    recognitionRef.current.start();
+    
+    try {
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('Error starting recognition:', error);
+      setIsListening(false);
+      setShowManualInput(true);
+      toast({
+        title: 'Erro ao iniciar',
+        description: 'Use o campo de texto para digitar seu comando.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const stopListening = () => {
     if (recognitionRef.current) {
-      recognitionRef.current.stop();
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Error stopping recognition:', error);
+      }
     }
     if (processingTimeoutRef.current) {
       clearTimeout(processingTimeoutRef.current);
       processingTimeoutRef.current = null;
     }
     setIsListening(false);
+  };
+
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (manualInput.trim()) {
+      setTranscript(manualInput);
+      processCommand(manualInput);
+      setManualInput('');
+    }
   };
 
   const processCommand = async (command: string) => {
@@ -301,9 +337,17 @@ export default function CommandCenterPage() {
           <p className="text-sm sm:text-base text-muted-foreground px-4">
             Dite seus comandos e deixe a IA fazer o trabalho
           </p>
-          <p className="text-xs text-muted-foreground hidden sm:block">
-            💡 Dica: Segure Espaço para ativar o microfone
-          </p>
+          <div className="flex items-center gap-2 justify-center">
+            <p className="text-xs text-muted-foreground hidden sm:block">
+              💡 Dica: Segure Espaço para ativar o microfone
+            </p>
+            <button
+              onClick={() => setShowManualInput(!showManualInput)}
+              className="text-xs text-primary hover:underline sm:hidden"
+            >
+              ou digite seu comando
+            </button>
+          </div>
         </div>
 
         {/* Listening Orb - Visual Premium */}
@@ -344,26 +388,77 @@ export default function CommandCenterPage() {
           </motion.div>
 
           {/* Microphone Icon Button (alternativa mobile) */}
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={isListening ? stopListening : startListening}
-            disabled={isProcessing}
-            className="sm:hidden"
-          >
-            {isListening ? (
-              <>
-                <MicOff className="size-4 mr-2" />
-                Parar
-              </>
-            ) : (
-              <>
-                <Mic className="size-4 mr-2" />
-                Falar
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2 sm:hidden">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={isListening ? stopListening : startListening}
+              disabled={isProcessing}
+            >
+              {isListening ? (
+                <>
+                  <MicOff className="size-4 mr-2" />
+                  Parar
+                </>
+              ) : (
+                <>
+                  <Mic className="size-4 mr-2" />
+                  Falar
+                </>
+              )}
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setShowManualInput(!showManualInput)}
+              disabled={isProcessing}
+            >
+              <Keyboard className="size-4 mr-2" />
+              Digitar
+            </Button>
+          </div>
         </div>
+
+        {/* Manual Input (for mobile or when voice not supported) */}
+        <AnimatePresence>
+          {showManualInput && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="px-2"
+            >
+              <Card className="p-4 bg-card/50 backdrop-blur">
+                <form onSubmit={handleManualSubmit} className="space-y-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
+                    <Keyboard className="size-4" />
+                    <span>Digite seu comando</span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={manualInput}
+                      onChange={(e) => setManualInput(e.target.value)}
+                      placeholder="Ex: Gastei 30 reais no almoço"
+                      disabled={isProcessing}
+                      className="flex-1"
+                    />
+                    <Button 
+                      type="submit" 
+                      size="icon"
+                      disabled={isProcessing || !manualInput.trim()}
+                    >
+                      {isProcessing ? (
+                        <Loader2 className="size-4 animate-spin" />
+                      ) : (
+                        <Send className="size-4" />
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Transcript */}
         <AnimatePresence>
