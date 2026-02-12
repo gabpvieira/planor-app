@@ -30,7 +30,7 @@ export default function CommandCenterPage() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string; action?: CommandAction } | null>(null);
+  const [feedbackList, setFeedbackList] = useState<Array<{ type: 'success' | 'error'; message: string; action?: CommandAction; id: string }>>([]);
   const [manualInput, setManualInput] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   
@@ -135,7 +135,7 @@ export default function CommandCenterPage() {
     }
 
     setTranscript('');
-    setFeedback(null);
+    setFeedbackList([]);
     finalTranscriptRef.current = '';
     setIsListening(true);
     
@@ -195,37 +195,46 @@ export default function CommandCenterPage() {
 
       // Handle multiple actions
       if (result.actions && Array.isArray(result.actions)) {
+        console.log('[Command] Processing multiple actions:', result.actions.length);
+        const newFeedbacks: typeof feedbackList = [];
+        
         for (const action of result.actions) {
           await executeAction(action);
+          newFeedbacks.push({
+            type: 'success',
+            message: getSuccessMessage(action),
+            action: action,
+            id: `${Date.now()}-${Math.random()}`,
+          });
         }
-        setFeedback({
-          type: 'success',
-          message: `${result.actions.length} ações executadas com sucesso!`,
-          action: result.actions[0], // Use first action for redirect
-        });
+        
+        setFeedbackList(newFeedbacks);
       }
       // Handle single action
       else if (result.action) {
         if (result.action === 'unknown' || result.action === 'error') {
-          setFeedback({
+          setFeedbackList([{
             type: 'error',
             message: result.message || 'Não entendi, pode repetir?',
-          });
+            id: `${Date.now()}-${Math.random()}`,
+          }]);
         } else {
           await executeAction(result as CommandAction);
-          setFeedback({
+          setFeedbackList([{
             type: 'success',
             message: getSuccessMessage(result as CommandAction),
             action: result as CommandAction,
-          });
+            id: `${Date.now()}-${Math.random()}`,
+          }]);
         }
       }
     } catch (error: any) {
       console.error('[Command] Error processing command:', error);
-      setFeedback({
+      setFeedbackList([{
         type: 'error',
         message: 'Erro ao processar comando. Tente novamente.',
-      });
+        id: `${Date.now()}-${Math.random()}`,
+      }]);
     } finally {
       console.log('[Command] Processing complete');
       setIsProcessing(false);
@@ -498,14 +507,20 @@ export default function CommandCenterPage() {
           )}
         </AnimatePresence>
 
-        {/* Feedback - Premium macOS Style */}
-        <AnimatePresence>
-          {feedback && (
+        {/* Feedback Cards - Individual para cada ação */}
+        <AnimatePresence mode="popLayout">
+          {feedbackList.map((feedback, index) => (
             <motion.div
+              key={feedback.id}
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: -20 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              transition={{ 
+                type: 'spring', 
+                stiffness: 300, 
+                damping: 30,
+                delay: index * 0.1 
+              }}
               className="px-2"
             >
               <div className={`
@@ -587,7 +602,7 @@ export default function CommandCenterPage() {
                 }`} />
               </div>
             </motion.div>
-          )}
+          ))}
         </AnimatePresence>
 
         {/* Examples */}
