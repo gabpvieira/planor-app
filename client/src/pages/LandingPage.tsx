@@ -10,19 +10,19 @@ export default function LandingPage() {
     <div className="min-h-screen bg-background text-foreground flex flex-col font-sans">
       {/* Navigation */}
       <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/80 backdrop-blur-md">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-4 h-14 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 header-logo">
-            <PlanorLogo size={120} />
+            <PlanorLogo size={100} className="scale-75 sm:scale-100" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
             <Link href="/login">
-              <Button variant="ghost" className="font-medium text-muted-foreground hover:text-foreground">
+              <Button variant="ghost" className="font-medium text-muted-foreground hover:text-foreground text-sm sm:text-base px-2 sm:px-4">
                 Entrar
               </Button>
             </Link>
             <Link href="/login">
-              <Button className="font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all">
+              <Button className="font-semibold shadow-md shadow-primary/20 hover:shadow-lg hover:shadow-primary/30 transition-all text-sm sm:text-base px-3 sm:px-4">
                 Começar
               </Button>
             </Link>

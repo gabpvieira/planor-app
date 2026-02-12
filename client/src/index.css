@@ -4,6 +4,9 @@
    Fallback: Arial, sans-serif
    ============================================ */
 
+/* === PREMIUM FONT IMPORTS === */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -130,6 +133,8 @@
   html {
     font-size: 16px;
     text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+    max-width: 100vw;
   }
   
   body {
@@ -140,6 +145,16 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     font-feature-settings: "kern" 1, "liga" 1;
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
+  }
+  
+  /* Prevent horizontal scroll globally */
+  #root {
+    overflow-x: hidden;
+    max-width: 100vw;
+    width: 100%;
   }
   
   /* Headings - macOS Style */
@@ -859,7 +874,60 @@ kbd {
 .finance-page {
   /* Usa o background do tema global */
   background: hsl(var(--background));
-  min-height: 100vh;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
+}
+
+.finance-page > * {
+  max-width: 100%;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .finance-page {
+    padding: 0;
+  }
+  
+  .finance-page .container {
+    padding-left: 12px;
+    padding-right: 12px;
+    max-width: 100vw;
+  }
+  
+  .finance-glass,
+  .finance-summary-card,
+  .finance-account-card {
+    border-radius: 12px;
+  }
+  
+  .finance-tabs {
+    gap: 4px;
+  }
+  
+  .finance-tab {
+    padding: 8px 12px;
+    font-size: 0.875rem;
+  }
+  
+  /* Prevent horizontal scroll */
+  .finance-summary-card,
+  .finance-glass,
+  .finance-account-card,
+  .finance-transaction-row {
+    max-width: 100%;
+    overflow: hidden;
+  }
+  
+  /* Ensure text doesn't overflow */
+  .finance-value-large,
+  .finance-value-medium {
+    word-break: break-word;
+  }
+  
+  .finance-page {
+    min-height: 100vh;
+  }
 }
 
 /* === GLASS PANELS (macOS Style) === */
@@ -872,6 +940,15 @@ kbd {
   box-shadow: 
     0 1px 3px rgba(0, 0, 0, 0.04),
     0 4px 12px rgba(0, 0, 0, 0.03);
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .finance-glass {
+    border-radius: 12px;
+  }
 }
 
 .dark .finance-glass {
@@ -892,6 +969,14 @@ kbd {
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.04),
     0 8px 32px rgba(0, 0, 0, 0.08);
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .finance-glass-elevated {
+    border-radius: 16px;
+  }
 }
 
 .dark .finance-glass-elevated {
@@ -911,6 +996,16 @@ kbd {
   border-radius: 16px;
   padding: 20px;
   transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  max-width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .finance-summary-card {
+    padding: 12px;
+    border-radius: 12px;
+  }
 }
 
 .dark .finance-summary-card {
@@ -2724,25 +2819,23 @@ kbd {
 
 /* === MOBILE RESPONSIVE === */
 @media (max-width: 768px) {
+  /* Remove all planor-sidebar custom styles on mobile */
   .planor-sidebar {
-    transform: translateX(-100%);
-    transition: transform var(--sidebar-transition);
-  }
-  
-  .planor-sidebar[data-mobile-open="true"] {
-    transform: translateX(0);
+    all: unset;
   }
 }
 
 /* === MAIN CONTENT OFFSET === */
-.planor-main-content {
-  margin-left: var(--sidebar-width-expanded);
-  transition: margin-left var(--sidebar-transition);
-}
+@media (min-width: 769px) {
+  .planor-main-content {
+    margin-left: var(--sidebar-width-expanded);
+    transition: margin-left var(--sidebar-transition);
+  }
 
-.planor-sidebar--collapsed ~ .planor-main-content,
-[data-sidebar-collapsed="true"] .planor-main-content {
-  margin-left: var(--sidebar-width-collapsed);
+  .planor-sidebar--collapsed ~ .planor-main-content,
+  [data-sidebar-collapsed="true"] .planor-main-content {
+    margin-left: var(--sidebar-width-collapsed);
+  }
 }
 
 /* ============================================
@@ -3274,9 +3367,6 @@ kbd {
    CREDIT SUMMARY PREMIUM - Luxury Tech Design
    Inspired by Apple Card & Revolut Metal
    ============================================ */
-
-/* === PREMIUM FONT IMPORT === */
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 /* === CONTAINER === */
 .credit-summary-premium {

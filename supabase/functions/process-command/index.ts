@@ -9,23 +9,23 @@ const corsHeaders = {
 const SYSTEM_PROMPT = `Você é o cérebro do Planor, um assistente inteligente de produtividade.
 Sua única saída deve ser um JSON válido. Analise o comando do usuário e identifique a intenção.
 
-DATA ATUAL: 2026-02-12 (use como referência para "hoje", "amanhã", etc.)
+DATA ATUAL: {{CURRENT_DATE}} (use como referência para "hoje", "amanhã", etc.)
 
 AÇÕES SUPORTADAS:
 
 1. FINANÇAS (action: "finance"):
-   - Lançar despesa: { action: "finance", type: "expense", amount: 50, description: "iFood", category: "alimentacao", date: "2026-02-12" }
-   - Lançar receita: { action: "finance", type: "income", amount: 1500, description: "Salário", category: "salario", date: "2026-02-12" }
+   - Lançar despesa: { action: "finance", type: "expense", amount: 50, description: "iFood", category: "alimentacao", date: "{{CURRENT_DATE}}" }
+   - Lançar receita: { action: "finance", type: "income", amount: 1500, description: "Salário", category: "salario", date: "{{CURRENT_DATE}}" }
    
    Categorias válidas: alimentacao, transporte, moradia, saude, educacao, lazer, compras, servicos, assinaturas, investimentos, salario, freelance, outros
 
 2. HÁBITOS (action: "habit"):
-   - Marcar como feito: { action: "habit", habit_name: "Correr", status: "complete", date: "2026-02-12" }
+   - Marcar como feito: { action: "habit", habit_name: "Correr", status: "complete", date: "{{CURRENT_DATE}}" }
    - Criar hábito: { action: "habit", operation: "create", title: "Meditar", frequency: "daily" }
 
 3. AGENDA (action: "agenda"):
-   - Criar evento: { action: "agenda", title: "Reunião", start_time: "2026-02-13T15:00:00", end_time: "2026-02-13T16:00:00", type: "event" }
-   - Bloquear horário: { action: "agenda", title: "Foco", start_time: "2026-02-12T14:00:00", end_time: "2026-02-12T16:00:00", type: "block" }
+   - Criar evento: { action: "agenda", title: "Reunião", start_time: "{{TOMORROW}}T15:00:00", end_time: "{{TOMORROW}}T16:00:00", type: "event" }
+   - Bloquear horário: { action: "agenda", title: "Foco", start_time: "{{CURRENT_DATE}}T14:00:00", end_time: "{{CURRENT_DATE}}T16:00:00", type: "block" }
 
 4. COMANDOS MÚLTIPLOS:
    Se o usuário der múltiplos comandos, retorne um array: { actions: [...] }
@@ -33,12 +33,14 @@ AÇÕES SUPORTADAS:
 5. NÃO ENTENDIDO:
    Se não entender: { action: "unknown", message: "Não entendi, pode repetir?" }
 
-REGRAS:
+REGRAS IMPORTANTES:
+- SEMPRE use {{CURRENT_DATE}} como data padrão quando o usuário disser "hoje" ou não mencionar data
+- "Amanhã" = {{TOMORROW}}
+- "Ontem" = {{YESTERDAY}}
 - Sempre infira a categoria mais apropriada para finanças
-- Use a data atual como padrão se não especificado
-- "Amanhã" = 2026-02-13, "Hoje" = 2026-02-12
 - Valores monetários devem ser números (sem R$)
 - Horários no formato ISO 8601
+- Se o usuário não mencionar data, use {{CURRENT_DATE}}
 
 Responda APENAS com JSON válido, sem texto adicional.`
 
@@ -73,10 +75,31 @@ serve(async (req) => {
 
     const openai = new OpenAI({ apiKey })
 
+    // Get current date in Brazil timezone (UTC-3)
+    const now = new Date()
+    const brazilOffset = -3 * 60 // UTC-3 in minutes
+    const localOffset = now.getTimezoneOffset()
+    const brazilTime = new Date(now.getTime() + (localOffset + brazilOffset) * 60000)
+    
+    const currentDate = brazilTime.toISOString().split('T')[0] // YYYY-MM-DD
+    const tomorrow = new Date(brazilTime)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const tomorrowDate = tomorrow.toISOString().split('T')[0]
+    
+    const yesterday = new Date(brazilTime)
+    yesterday.setDate(yesterday.getDate() - 1)
+    const yesterdayDate = yesterday.toISOString().split('T')[0]
+
+    // Replace placeholders in system prompt
+    const systemPrompt = SYSTEM_PROMPT
+      .replace(/\{\{CURRENT_DATE\}\}/g, currentDate)
+      .replace(/\{\{TOMORROW\}\}/g, tomorrowDate)
+      .replace(/\{\{YESTERDAY\}\}/g, yesterdayDate)
+
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { role: "system", content: SYSTEM_PROMPT },
+        { role: "system", content: systemPrompt },
         { role: "user", content: command },
       ],
       max_tokens: 1000,

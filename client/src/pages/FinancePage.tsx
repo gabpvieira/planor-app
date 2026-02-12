@@ -25,6 +25,7 @@ import { BankSelect, type BrazilianBank } from '@/components/ui/bank-select';
 import { getBankBySlug } from '@/data/brazilian-banks';
 import { getBrasiliaDateString } from '@shared/utils/timezone';
 import StatementImport from '@/components/finance/StatementImport';
+import { PageHeader } from '@/components/PageHeader';
 
 // Currency formatter
 const formatCurrency = (value: number) => {
@@ -144,23 +145,23 @@ function SummaryCards({ summary, showValues }: { summary: any; showValues: boole
   ];
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-3 sm:gap-4 grid-cols-2 lg:grid-cols-4 w-full">
       {cards.map((card, index) => (
         <div 
           key={index}
-          className="finance-summary-card finance-animate-in"
+          className="finance-summary-card finance-animate-in min-w-0"
           style={{ animationDelay: `${index * 50}ms` }}
         >
-          <div className="flex items-center justify-between mb-3">
-            <span className="finance-label">{card.label}</span>
-            <div className={`p-2 rounded-lg ${card.bgClass}`}>
-              <card.icon className={`size-4 ${card.colorClass}`} />
+          <div className="flex items-center justify-between mb-2 sm:mb-3 gap-2">
+            <span className="finance-label text-xs sm:text-sm truncate">{card.label}</span>
+            <div className={`p-1.5 sm:p-2 rounded-lg ${card.bgClass} shrink-0`}>
+              <card.icon className={`size-3 sm:size-4 ${card.colorClass}`} />
             </div>
           </div>
-          <div className={`finance-value-large ${card.colorClass}`}>
+          <div className={`text-base sm:text-xl lg:text-2xl font-semibold ${card.colorClass} truncate`}>
             {displayValue(card.value)}
           </div>
-          <p className="finance-label-small mt-2">{card.subLabel}</p>
+          <p className="finance-label-small mt-1 sm:mt-2 text-[10px] sm:text-xs truncate">{card.subLabel}</p>
         </div>
       ))}
     </div>
@@ -225,19 +226,19 @@ function AccountsSection({ accounts, onCreateAccount, onDeleteAccount }: any) {
   };
 
   return (
-    <div className="finance-glass p-5">
+    <div className="finance-glass p-4 sm:p-5 w-full min-w-0">
       <div className="finance-section-header">
-        <h3 className="finance-section-title">
-          <Wallet className="size-5 finance-icon" />
+        <h3 className="finance-section-title text-sm sm:text-base">
+          <Wallet className="size-4 sm:size-5 finance-icon" />
           Contas e Carteiras
         </h3>
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <button className="finance-btn finance-btn-secondary flex items-center gap-1.5">
-              <Plus className="size-4" /> Nova
+            <button className="finance-btn finance-btn-secondary flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 shrink-0">
+              <Plus className="size-3 sm:size-4" /> <span className="hidden xs:inline">Nova</span>
             </button>
           </DialogTrigger>
-          <DialogContent className="finance-glass-elevated">
+          <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Nova Conta</DialogTitle>
             </DialogHeader>
@@ -260,7 +261,7 @@ function AccountsSection({ accounts, onCreateAccount, onDeleteAccount }: any) {
                   className="finance-input"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="finance-label">Tipo</label>
                   <Select value={form.type} onValueChange={v => setForm({ ...form, type: v as any })}>
@@ -281,7 +282,7 @@ function AccountsSection({ accounts, onCreateAccount, onDeleteAccount }: any) {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="submit" className="finance-btn finance-btn-primary">Criar Conta</Button>
+                <Button type="submit" className="finance-btn finance-btn-primary w-full sm:w-auto">Criar Conta</Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -289,10 +290,10 @@ function AccountsSection({ accounts, onCreateAccount, onDeleteAccount }: any) {
       </div>
 
       {accounts.length === 0 ? (
-        <div className="finance-empty-state">
-          <Wallet className="finance-empty-state-icon" />
-          <p className="finance-empty-state-text">Nenhuma conta cadastrada</p>
-          <p className="finance-empty-state-hint">Adicione suas contas para começar</p>
+        <div className="finance-empty-state py-6 sm:py-8">
+          <Wallet className="finance-empty-state-icon size-8 sm:size-10" />
+          <p className="finance-empty-state-text text-xs sm:text-sm">Nenhuma conta cadastrada</p>
+          <p className="finance-empty-state-hint text-[10px] sm:text-xs">Adicione suas contas para começar</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -304,41 +305,41 @@ function AccountsSection({ accounts, onCreateAccount, onDeleteAccount }: any) {
             return (
               <div
                 key={account.id}
-                className="finance-account-card group"
+                className="finance-account-card group w-full"
                 style={{ '--account-color': account.color_hex } as React.CSSProperties}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl flex items-center justify-center bg-[var(--finance-gray-6)] dark:bg-[var(--finance-gray-5)]">
+                <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                    <div className="size-8 sm:size-10 rounded-xl flex items-center justify-center bg-[var(--finance-gray-6)] dark:bg-[var(--finance-gray-5)] shrink-0">
                       {logoUrl ? (
                         <img 
                           src={logoUrl}
                           alt={account.name}
-                          className="size-6 object-contain"
+                          className="size-5 sm:size-6 object-contain"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
                       ) : (
-                        <IconComponent className="size-5 finance-icon" />
+                        <IconComponent className="size-4 sm:size-5 finance-icon" />
                       )}
                     </div>
-                    <div>
-                      <p className="font-medium text-[0.9375rem]">{account.name}</p>
-                      <p className="finance-label-small">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-xs sm:text-[0.9375rem] truncate">{account.name}</p>
+                      <p className="finance-label-small text-[10px] sm:text-xs truncate">
                         {ACCOUNT_TYPES[account.type as keyof typeof ACCOUNT_TYPES]?.label}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`finance-value-medium ${Number(account.balance) >= 0 ? 'text-[var(--finance-green-text)]' : 'text-[var(--finance-red-text)]'}`}>
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                    <span className={`text-xs sm:text-sm font-semibold truncate ${Number(account.balance) >= 0 ? 'text-[var(--finance-green-text)]' : 'text-[var(--finance-red-text)]'}`}>
                       {formatCurrency(Number(account.balance))}
                     </span>
                     <button
                       onClick={() => onDeleteAccount(account.id)}
-                      className="opacity-0 group-hover:opacity-100 p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-red)] rounded-lg transition-all"
+                      className="opacity-0 group-hover:opacity-100 p-1.5 sm:p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-red)] rounded-lg transition-all"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3 sm:size-4" />
                     </button>
                   </div>
                 </div>
@@ -889,23 +890,23 @@ function TransactionsSection({
   };
 
   return (
-    <div className="finance-glass p-5">
-      <div className="finance-section-header">
+    <div className="finance-glass p-4 sm:p-5 w-full min-w-0">
+      <div className="finance-section-header flex-wrap gap-2">
         <h3 className="finance-section-title">
           <BarChart3 className="size-5 finance-icon" />
           Transações
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
-            className="finance-btn finance-btn-secondary flex items-center gap-1.5"
+            className="finance-btn finance-btn-secondary flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3"
             onClick={() => setImportOpen(true)}
           >
-            <Upload className="size-4" /> Importar Extrato
+            <Upload className="size-3 sm:size-4" /> <span className="hidden sm:inline">Importar</span>
           </button>
           <Dialog open={isOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <button className="finance-btn finance-btn-primary flex items-center gap-1.5">
-              <Plus className="size-4" /> Nova
+            <button className="finance-btn finance-btn-primary flex items-center gap-1.5 text-xs sm:text-sm px-2 sm:px-3">
+              <Plus className="size-3 sm:size-4" /> Nova
             </button>
           </DialogTrigger>
           <DialogContent className="finance-glass-elevated max-w-lg">
@@ -1136,23 +1137,23 @@ function TransactionsSection({
               return (
                 <div
                   key={transaction.id}
-                  className="finance-transaction-row group"
+                  className="finance-transaction-row group w-full"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                     <div
-                      className={`size-10 rounded-xl flex items-center justify-center ${
+                      className={`size-8 sm:size-10 rounded-xl flex items-center justify-center shrink-0 ${
                         isIncome ? 'bg-[var(--finance-green-soft)]' : 'bg-[var(--finance-red-soft)]'
                       }`}
                     >
                       {isIncome ? (
-                        <TrendingUp className="size-5 text-[var(--finance-green-text)]" />
+                        <TrendingUp className="size-4 sm:size-5 text-[var(--finance-green-text)]" />
                       ) : (
-                        <TrendingDown className="size-5 text-[var(--finance-red-text)]" />
+                        <TrendingDown className="size-4 sm:size-5 text-[var(--finance-red-text)]" />
                       )}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium text-[0.9375rem]">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-medium text-xs sm:text-[0.9375rem] truncate">
                           {transaction.description || category?.label || transaction.category}
                         </p>
                         {isInstallment && (
@@ -1171,28 +1172,28 @@ function TransactionsSection({
                           </span>
                         )}
                       </div>
-                      <p className="finance-label-small">
+                      <p className="finance-label-small text-[10px] sm:text-xs truncate">
                         {format(parseISO(transaction.date), "d 'de' MMM", { locale: ptBR })}
                         {transaction.card_id && ' • Cartão'}
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className={`finance-value-medium ${isIncome ? 'text-[var(--finance-green-text)]' : 'text-[var(--finance-red-text)]'}`}>
+                  <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                    <span className={`text-xs sm:text-sm font-semibold truncate ${isIncome ? 'text-[var(--finance-green-text)]' : 'text-[var(--finance-red-text)]'}`}>
                       {isIncome ? '+' : '-'}{formatCurrency(Number(transaction.amount))}
                     </span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center gap-0.5 sm:gap-1 opacity-0 group-hover:opacity-100 transition-all">
                       <button
                         onClick={() => handleEdit(transaction)}
-                        className="p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-blue)] rounded-lg"
+                        className="p-1.5 sm:p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-blue)] rounded-lg"
                       >
-                        <Edit2 className="size-4" />
+                        <Edit2 className="size-3 sm:size-4" />
                       </button>
                       <button
                         onClick={() => onDeleteTransaction(transaction.id)}
-                        className="p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-red)] rounded-lg"
+                        className="p-1.5 sm:p-2 text-[var(--finance-gray-2)] hover:text-[var(--finance-red)] rounded-lg"
                       >
-                        <Trash2 className="size-4" />
+                        <Trash2 className="size-3 sm:size-4" />
                       </button>
                     </div>
                   </div>
@@ -1694,69 +1695,71 @@ export default function FinancePage() {
   }
 
   return (
-    <div className="finance-page min-h-screen">
-      <div className="container mx-auto p-6 max-w-7xl space-y-6">
+    <div className="finance-page min-h-screen overflow-x-hidden">
+      <div className="container mx-auto px-4 sm:px-6 md:px-8 py-4 sm:py-6 max-w-7xl w-full space-y-4 sm:space-y-6">
         {/* Header - Clean & Minimal */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">Finanças</h1>
-            <p className="text-[var(--finance-gray-1)] text-sm mt-0.5">
-              Central de controle patrimonial
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowValues(!showValues)}
-              className="finance-btn finance-btn-secondary"
-              title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
-            >
-              {showValues ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-            </button>
-            <button 
-              onClick={() => setIsTransferOpen(true)}
-              className="finance-btn finance-btn-secondary flex items-center gap-2"
-            >
-              <ArrowRightLeft className="size-4" />
-              <span className="hidden sm:inline">Transferir</span>
-            </button>
-          </div>
+        <div className="w-full">
+          <PageHeader
+            title="Finanças"
+            description="Central de controle patrimonial"
+            actions={
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowValues(!showValues)}
+                  className="finance-btn finance-btn-secondary p-2"
+                  title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
+                >
+                  {showValues ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+                </button>
+                <button 
+                  onClick={() => setIsTransferOpen(true)}
+                  className="finance-btn finance-btn-secondary flex items-center gap-2 px-2 sm:px-3"
+                >
+                  <ArrowRightLeft className="size-4" />
+                  <span className="hidden sm:inline">Transferir</span>
+                </button>
+              </div>
+            }
+          />
         </div>
 
         {/* Summary Cards */}
         <SummaryCards summary={summary} showValues={showValues} />
 
         {/* Main Content Tabs - Linear Style */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="finance-tabs w-full lg:w-auto lg:inline-flex">
-            <TabsTrigger value="overview" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <BarChart3 className="size-4" />
-              <span className="hidden sm:inline">Visão Geral</span>
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <Activity className="size-4" />
-              <span className="hidden sm:inline">Análise</span>
-            </TabsTrigger>
-            <TabsTrigger value="accounts" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <Wallet className="size-4" />
-              <span className="hidden sm:inline">Contas</span>
-            </TabsTrigger>
-            <TabsTrigger value="cards" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <CreditCard className="size-4" />
-              <span className="hidden sm:inline">Cartões</span>
-            </TabsTrigger>
-            <TabsTrigger value="bills" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <Receipt className="size-4" />
-              <span className="hidden sm:inline">Recorrências</span>
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="finance-tab data-[state=active]:finance-tab-active gap-2">
-              <Tag className="size-4" />
-              <span className="hidden sm:inline">Categorias</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+            <TabsList className="finance-tabs w-full min-w-max sm:min-w-0 lg:w-auto lg:inline-flex">
+              <TabsTrigger value="overview" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <BarChart3 className="size-4" />
+                <span className="hidden sm:inline">Visão Geral</span>
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <Activity className="size-4" />
+                <span className="hidden sm:inline">Análise</span>
+              </TabsTrigger>
+              <TabsTrigger value="accounts" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <Wallet className="size-4" />
+                <span className="hidden sm:inline">Contas</span>
+              </TabsTrigger>
+              <TabsTrigger value="cards" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <CreditCard className="size-4" />
+                <span className="hidden sm:inline">Cartões</span>
+              </TabsTrigger>
+              <TabsTrigger value="bills" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <Receipt className="size-4" />
+                <span className="hidden sm:inline">Recorrências</span>
+              </TabsTrigger>
+              <TabsTrigger value="categories" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
+                <Tag className="size-4" />
+                <span className="hidden sm:inline">Categorias</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6 finance-animate-in">
-            <div className="grid gap-6 lg:grid-cols-3">
+          <TabsContent value="overview" className="space-y-4 sm:space-y-6 finance-animate-in">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
                 <TransactionsSection
                   transactions={transactions}
@@ -1769,7 +1772,7 @@ export default function FinancePage() {
                   onUpdateTransaction={updateTransaction}
                 />
               </div>
-              <div className="space-y-6">
+              <div className="space-y-4 sm:space-y-6">
                 <CategoryBreakdownChart breakdown={categoryBreakdown} allCategories={allCategories} />
                 <UpcomingBillsSection upcomingBills={upcomingBills} />
               </div>
@@ -1789,14 +1792,14 @@ export default function FinancePage() {
           </TabsContent>
 
           {/* Accounts Tab */}
-          <TabsContent value="accounts" className="space-y-6 finance-animate-in">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <TabsContent value="accounts" className="space-y-4 sm:space-y-6 finance-animate-in">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <AccountsSection
                 accounts={accounts}
                 onCreateAccount={createAccount}
                 onDeleteAccount={deleteAccount}
               />
-              <div className="finance-glass p-5">
+              <div className="finance-glass p-4 sm:p-5">
                 <h3 className="finance-section-title mb-4">Distribuição do Patrimônio</h3>
                 {accounts.length === 0 ? (
                   <div className="finance-empty-state">
@@ -1841,8 +1844,8 @@ export default function FinancePage() {
           </TabsContent>
 
           {/* Cards Tab */}
-          <TabsContent value="cards" className="space-y-6 finance-animate-in">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <TabsContent value="cards" className="space-y-4 sm:space-y-6 finance-animate-in">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <CreditCardsSection
                 creditCards={creditCards}
                 onCreateCard={createCard}
@@ -1862,8 +1865,8 @@ export default function FinancePage() {
           </TabsContent>
 
           {/* Bills Tab */}
-          <TabsContent value="bills" className="space-y-6 finance-animate-in">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <TabsContent value="bills" className="space-y-4 sm:space-y-6 finance-animate-in">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <RecurringBillsSection
                 bills={recurringBills}
                 accounts={accounts}
@@ -1903,8 +1906,8 @@ export default function FinancePage() {
           </TabsContent>
 
           {/* Categories Tab */}
-          <TabsContent value="categories" className="space-y-6 finance-animate-in">
-            <div className="grid gap-6 lg:grid-cols-2">
+          <TabsContent value="categories" className="space-y-4 sm:space-y-6 finance-animate-in">
+            <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
               <CategoriesSection
                 customCategories={customCategories}
                 allCategories={allCategories}

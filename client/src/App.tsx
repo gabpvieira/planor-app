@@ -31,18 +31,24 @@ function AuthenticatedApp() {
     return false;
   });
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   useEffect(() => {
     localStorage.setItem(SIDEBAR_STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
 
   return (
-    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed }}>
+    <SidebarContext.Provider value={{ isCollapsed, setIsCollapsed, isMobileMenuOpen, setIsMobileMenuOpen }}>
       <div className="flex min-h-screen" data-sidebar-collapsed={isCollapsed}>
         <AppSidebar />
         <main 
-          className="flex-1 bg-background transition-all duration-[220ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+          className="flex-1 bg-background transition-all md:ml-[var(--sidebar-width-collapsed)] lg:ml-[var(--sidebar-width-expanded)]"
           style={{ 
-            marginLeft: isCollapsed ? 'var(--sidebar-width-collapsed, 72px)' : 'var(--sidebar-width-expanded, 240px)' 
+            marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 
+              ? (isCollapsed ? 'var(--sidebar-width-collapsed, 72px)' : 'var(--sidebar-width-expanded, 240px)')
+              : '0',
+            transitionDuration: '220ms',
+            transitionTimingFunction: 'cubic-bezier(0.4, 0, 0.2, 1)'
           }}
         >
           <Switch>
