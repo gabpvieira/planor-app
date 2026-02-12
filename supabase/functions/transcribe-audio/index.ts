@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -14,57 +13,8 @@ serve(async (req) => {
 
   try {
     console.log('[Transcribe] Starting transcription request...')
+    console.log('[Transcribe] Headers:', Object.fromEntries(req.headers.entries()))
     
-    // Verificar autenticação
-    const authHeader = req.headers.get('Authorization')
-    if (!authHeader) {
-      console.error('[Transcribe] Missing Authorization header')
-      return new Response(
-        JSON.stringify({ error: 'Não autenticado' }), 
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    // Criar cliente Supabase para verificar o token
-    // Usar variáveis de ambiente automáticas do Supabase
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? `https://${Deno.env.get('SUPABASE_PROJECT_REF')}.supabase.co`
-    const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    
-    if (!supabaseUrl || !supabaseKey) {
-      console.error('[Transcribe] Missing Supabase credentials')
-      return new Response(
-        JSON.stringify({ error: 'Configuração inválida do servidor' }), 
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-    
-    const supabase = createClient(supabaseUrl, supabaseKey, {
-      global: {
-        headers: { Authorization: authHeader },
-      },
-    })
-
-    // Verificar usuário
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      console.error('[Transcribe] Auth error:', authError)
-      return new Response(
-        JSON.stringify({ error: 'Token inválido' }), 
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      )
-    }
-
-    console.log('[Transcribe] User authenticated:', user.id)
-
     // Parse FormData
     const formData = await req.formData()
     const audioFile = formData.get('audio')
@@ -124,7 +74,17 @@ serve(async (req) => {
         statusText: whisperResponse.statusText,
         error: errorText
       })
-      throw new Error(`Whisper API error: ${whisperResponse.statusText}`)
+      
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro na API Whisper: ${whisperResponse.statusText}`,
+          details: errorText
+        }), 
+        {
+          status: whisperResponse.status,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      )
     }
 
     const whisperData = await whisperResponse.json()
@@ -132,8 +92,7 @@ serve(async (req) => {
 
     return new Response(
       JSON.stringify({ 
-        text: whisperData.text,
-        user_id: user.id 
+        text: whisperData.text
       }), 
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

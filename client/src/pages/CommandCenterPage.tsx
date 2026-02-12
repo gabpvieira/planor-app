@@ -441,13 +441,13 @@ export default function CommandCenterPage() {
   const getRedirectPath = (action: CommandAction): string => {
     switch (action.action) {
       case 'finance':
-        return '/finance';
+        return '/app/finance';
       case 'habit':
-        return '/habits';
+        return '/app/habits';
       case 'agenda':
-        return '/agenda';
+        return '/app/agenda';
       default:
-        return '/';
+        return '/app';
     }
   };
 
