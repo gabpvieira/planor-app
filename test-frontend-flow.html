@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Statement Import</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success { color: #059669; }
+    .error { color: #dc2626; }
+    input[type="file"] {
+      margin: 20px 0;
+      padding: 10px;
+      border: 2px dashed #d1d5db;
+      border-radius: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Statement Import</h1>
+    <p>Teste a funcionalidade de importação de extrato</p>
+    
+    <div>
+      <h3>Teste 1: Texto simples</h3>
+      <button onclick="testText()">Testar com Texto</button>
+    </div>
+
+    <div>
+      <h3>Teste 2: Upload de arquivo</h3>
+      <input type="file" id="fileInput" accept=".pdf,.csv,.txt,.png,.jpg,.jpeg,.webp">
+      <button onclick="testFile()">Testar com Arquivo</button>
+    </div>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://qchuggfaogrkyurktwxg.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjaHVnZ2Zhb2dya3l1cmt0d3hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAwNDU4NDMsImV4cCI6MjA4NTYyMTg0M30.o0usb29f2JqgC1MXaLoi1dqckk7y8RYJ5ATg8eCJEno';
+
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    function log(message, type = 'info') {
+      const result = document.getElementById('result');
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+      result.innerHTML += `<div class="${className}">${message}</div>`;
+    }
+
+    async function testText() {
+      document.getElementById('result').innerHTML = '';
+      log('🚀 Iniciando teste com texto...');
+
+      try {
+        const payload = {
+          text: '10/02 COMPRA IFOOD 54.90\n11/02 PIX RECEBIDO JOAO SILVA 150.00'
+        };
+
+        log('📤 Enviando payload: ' + JSON.stringify(payload, null, 2));
+
+        const { data, error } = await supabase.functions.invoke('process-statement', {
+          body: payload
+        });
+
+        if (error) {
+          log('❌ Erro: ' + JSON.stringify(error, null, 2), 'error');
+          return;
+        }
+
+        log('✅ Sucesso!', 'success');
+        log('📥 Resposta: ' + JSON.stringify(data, null, 2));
+
+        if (data.transactions && data.transactions.length > 0) {
+          log(`\n✨ ${data.transactions.length} transações encontradas!`, 'success');
+        }
+      } catch (error) {
+        log('❌ Erro na requisição: ' + error.message, 'error');
+      }
+    }
+
+    async function testFile() {
+      document.getElementById('result').innerHTML = '';
+      const fileInput = document.getElementById('fileInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        log('⚠️  Selecione um arquivo primeiro!', 'error');
+        return;
+      }
+
+      log(`🚀 Iniciando teste com arquivo: ${file.name} (${file.type})`);
+
+      try {
+        let payload = {};
+
+        if (file.type === 'application/pdf') {
+          log('📄 Processando PDF...');
+          const base64 = await fileToBase64(file);
+          payload = { pdfBase64: base64.split(',')[1], mimeType: file.type };
+        } else if (file.type === 'text/csv' || file.type === 'text/plain') {
+          log('📝 Processando texto...');
+          const text = await file.text();
+          payload = { text };
+        } else if (file.type.startsWith('image/')) {
+          log('🖼️  Processando imagem...');
+          const base64 = await fileToBase64(file);
+          payload = { imageBase64: base64.split(',')[1], mimeType: file.type };
+        }
+
+        log('📤 Enviando para Edge Function...');
+
+        const { data, error } = await supabase.functions.invoke('process-statement', {
+          body: payload
+        });
+
+        if (error) {
+          log('❌ Erro: ' + JSON.stringify(error, null, 2), 'error');
+          return;
+        }
+
+        log('✅ Sucesso!', 'success');
+        log('📥 Resposta: ' + JSON.stringify(data, null, 2));
+
+        if (data.transactions && data.transactions.length > 0) {
+          log(`\n✨ ${data.transactions.length} transações encontradas!`, 'success');
+        }
+      } catch (error) {
+        log('❌ Erro: ' + error.message, 'error');
+        console.error(error);
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
+  </script>
+</body>
+</html>
