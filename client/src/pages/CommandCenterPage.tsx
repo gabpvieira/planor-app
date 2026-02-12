@@ -35,7 +35,6 @@ export default function CommandCenterPage() {
   const [showManualInput, setShowManualInput] = useState(false);
   
   const recognitionRef = useRef<any>(null);
-  const processingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const finalTranscriptRef = useRef<string>('');
 
   useEffect(() => {
@@ -50,41 +49,34 @@ export default function CommandCenterPage() {
       recognitionRef.current.onresult = (event: any) => {
         const current = event.resultIndex;
         const transcriptText = event.results[current][0].transcript;
+        console.log('[Voice] Transcript received:', transcriptText, 'isFinal:', event.results[current].isFinal);
+        
         setTranscript(transcriptText);
         finalTranscriptRef.current = transcriptText;
 
-        // Clear any existing timeout
-        if (processingTimeoutRef.current) {
-          clearTimeout(processingTimeoutRef.current);
-          processingTimeoutRef.current = null;
-        }
-
-        // If final result, wait 1.5 seconds before processing
+        // If final result, process immediately
         if (event.results[current].isFinal) {
-          console.log('[Voice] Final transcript:', transcriptText);
-          setIsListening(false); // Stop listening indicator
+          console.log('[Voice] Final transcript detected, will process in 1 second');
           
-          processingTimeoutRef.current = setTimeout(() => {
-            console.log('[Voice] Processing command:', finalTranscriptRef.current);
-            if (finalTranscriptRef.current.trim()) {
-              processCommand(finalTranscriptRef.current);
+          // Use a simple timeout without clearing
+          setTimeout(() => {
+            const commandToProcess = finalTranscriptRef.current.trim();
+            console.log('[Voice] Timeout fired, processing:', commandToProcess);
+            
+            if (commandToProcess) {
+              setIsListening(false);
+              processCommand(commandToProcess);
             } else {
               console.warn('[Voice] Empty transcript, not processing');
+              setIsListening(false);
             }
-            processingTimeoutRef.current = null;
-          }, 1500);
+          }, 1000);
         }
       };
 
       recognitionRef.current.onerror = (event: any) => {
         console.error('[Voice] Speech recognition error:', event.error);
         setIsListening(false);
-        
-        // Clear timeout on error
-        if (processingTimeoutRef.current) {
-          clearTimeout(processingTimeoutRef.current);
-          processingTimeoutRef.current = null;
-        }
         
         toast({
           title: 'Erro no reconhecimento',
@@ -94,9 +86,11 @@ export default function CommandCenterPage() {
       };
 
       recognitionRef.current.onend = () => {
-        console.log('[Voice] Recognition ended');
-        // Don't clear timeout here - let it complete
-        setIsListening(false);
+        console.log('[Voice] Recognition ended, isListening will be set to false');
+        // Small delay to allow final result to be processed
+        setTimeout(() => {
+          setIsListening(false);
+        }, 100);
       };
     }
 
@@ -125,9 +119,6 @@ export default function CommandCenterPage() {
       document.removeEventListener('keyup', handleKeyUp);
       if (recognitionRef.current) {
         recognitionRef.current.stop();
-      }
-      if (processingTimeoutRef.current) {
-        clearTimeout(processingTimeoutRef.current);
       }
     };
   }, [isListening]);
@@ -169,10 +160,6 @@ export default function CommandCenterPage() {
       } catch (error) {
         console.error('Error stopping recognition:', error);
       }
-    }
-    if (processingTimeoutRef.current) {
-      clearTimeout(processingTimeoutRef.current);
-      processingTimeoutRef.current = null;
     }
     setIsListening(false);
   };
