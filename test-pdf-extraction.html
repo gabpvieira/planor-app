@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test PDF Extraction</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #2563eb;
+    }
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 6px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success { color: #059669; }
+    .error { color: #dc2626; }
+    input[type="file"] {
+      margin: 20px 0;
+      padding: 10px;
+      border: 2px dashed #d1d5db;
+      border-radius: 6px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test PDF Text Extraction</h1>
+    <p>Teste a extração de texto de PDFs usando PDF.js</p>
+    
+    <input type="file" id="pdfInput" accept=".pdf">
+    <button onclick="testPDF()">Extrair Texto do PDF</button>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    // Configure PDF.js worker
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+    function log(message, type = 'info') {
+      const result = document.getElementById('result');
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+      result.innerHTML += `<div class="${className}">${message}</div>`;
+    }
+
+    async function extractTextFromPDF(file) {
+      try {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        
+        log(`📄 PDF carregado: ${pdf.numPages} páginas`);
+        
+        let fullText = '';
+        
+        // Extract text from all pages
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+          log(`📖 Processando página ${pageNum}/${pdf.numPages}...`);
+          const page = await pdf.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          const pageText = textContent.items
+            .map(item => item.str)
+            .join(' ');
+          fullText += pageText + '\n';
+        }
+        
+        return fullText.trim();
+      } catch (error) {
+        console.error('Error extracting PDF text:', error);
+        throw new Error('Não foi possível extrair texto do PDF: ' + error.message);
+      }
+    }
+
+    async function testPDF() {
+      document.getElementById('result').innerHTML = '';
+      const fileInput = document.getElementById('pdfInput');
+      const file = fileInput.files[0];
+
+      if (!file) {
+        log('⚠️  Selecione um arquivo PDF primeiro!', 'error');
+        return;
+      }
+
+      if (file.type !== 'application/pdf') {
+        log('⚠️  O arquivo selecionado não é um PDF!', 'error');
+        return;
+      }
+
+      log(`🚀 Iniciando extração de: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`);
+
+      try {
+        const text = await extractTextFromPDF(file);
+        
+        log('\n✅ Texto extraído com sucesso!', 'success');
+        log(`\n📊 Total de caracteres: ${text.length}`);
+        log(`\n📝 Primeiros 500 caracteres:\n${text.substring(0, 500)}...`);
+        log(`\n📝 Texto completo:\n${text}`);
+      } catch (error) {
+        log(`\n❌ Erro: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

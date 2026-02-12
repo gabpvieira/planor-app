@@ -13,6 +13,10 @@ import {
   FileText, Loader2, Sparkles, Trash2, Check, Bot
 } from 'lucide-react';
 import { FINANCE_CATEGORIES } from '@/types/finance.types';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface AITransaction {
   date: string;
@@ -67,11 +71,13 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
   }, [open, user?.id]);
 
   const loadAccounts = async () => {
+    if (!user?.id) return;
+    
     try {
       const { data, error } = await supabase
         .from('finance_accounts')
         .select('id, name, bank')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('name');
 
       if (error) throw error;
@@ -95,8 +101,9 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
 
       // Process based on file type
       if (file.type === 'application/pdf') {
-        // PDFs are not supported directly - show error
-        throw new Error('PDFs não são suportados diretamente. Por favor, tire um print/screenshot do extrato e envie como imagem (PNG ou JPG).');
+        // Extract text from PDF using pdfjs-dist
+        const text = await extractTextFromPDF(file);
+        payload = { text };
       } else if (file.type === 'text/csv' || file.type === 'text/plain') {
         const text = await file.text();
         payload = { text };
@@ -133,6 +140,30 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
       reader.onload = () => resolve(reader.result as string);
       reader.onerror = error => reject(error);
     });
+  };
+
+  const extractTextFromPDF = async (file: File): Promise<string> => {
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      
+      let fullText = '';
+      
+      // Extract text from all pages
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+        fullText += pageText + '\n';
+      }
+      
+      return fullText.trim();
+    } catch (error) {
+      console.error('Error extracting PDF text:', error);
+      throw new Error('Não foi possível extrair texto do PDF. Tente converter para imagem.');
+    }
   };
 
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -238,7 +269,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
                 ref={fileInputRef}
                 type="file"
                 className="hidden"
-                accept=".csv,.txt,.png,.jpg,.jpeg,.webp"
+                accept=".pdf,.csv,.txt,.png,.jpg,.jpeg,.webp"
                 onChange={handleFileSelect}
               />
               <div className="flex flex-col items-center gap-3">
@@ -250,7 +281,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
                     Arraste seu extrato aqui ou clique para buscar
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    CSV, TXT ou Imagem (PNG, JPG, WEBP) — máx. 10MB
+                    Aceitamos PDF, CSV e Imagens (PNG, JPG, WEBP) — máx. 10MB
                   </p>
                 </div>
               </div>
