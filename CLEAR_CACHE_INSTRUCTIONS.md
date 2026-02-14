@@ -104,3 +104,40 @@ O problema era:
 | Firefox (Win) | Ctrl+Shift+R | Ctrl+Shift+Delete |
 | Safari (Mac) | Cmd+Option+R | Cmd+Option+E |
 | Chrome (Mac) | Cmd+Shift+R | Cmd+Shift+Delete |
+
+
+---
+
+## Erro de Refresh Token (AuthApiError: Invalid Refresh Token)
+
+Se você está vendo o erro "Invalid Refresh Token: Refresh Token Not Found" no console:
+
+### Solução Automática
+A aplicação agora detecta automaticamente tokens inválidos e limpa a sessão. Basta recarregar a página.
+
+### Solução Manual (se o erro persistir)
+
+1. Abra DevTools (F12)
+2. Vá em Application > Local Storage
+3. Selecione o domínio do site
+4. Delete todas as chaves que começam com `sb-` (são dados do Supabase)
+5. Recarregue a página
+
+### Via Console (Método Rápido)
+1. Abra DevTools (F12)
+2. Vá na aba Console
+3. Cole e execute:
+```javascript
+Object.keys(localStorage).filter(k => k.startsWith('sb-') || k.includes('supabase')).forEach(k => localStorage.removeItem(k));
+location.reload();
+```
+
+### Por que isso acontece?
+- O token de refresh expirou ou foi invalidado no servidor
+- O navegador ainda tem o token antigo em cache
+- A aplicação tenta usar o token inválido e recebe erro 400
+
+### Prevenção
+- A aplicação agora trata esse erro automaticamente
+- Tokens inválidos são detectados e a sessão é limpa
+- O usuário é redirecionado para a tela de login

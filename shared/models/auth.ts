@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, jsonb, pgTable, timestamp, varchar } from "drizzle-orm/pg-core";
+import { index, jsonb, pgTable, timestamp, varchar, text } from "drizzle-orm/pg-core";
 
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
@@ -21,9 +21,30 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  displayName: text("display_name"),
+  timezone: text("timezone").default("America/Sao_Paulo"),
+  notificationPrefs: jsonb("notification_prefs").default({
+    agenda: true,
+    goals: true,
+    finance: true,
+    habits: true,
+    dailySummary: false,
+    expenseAlerts: true,
+  }),
+  pushSubscription: jsonb("push_subscription"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
+
+// Notification preferences type
+export interface NotificationPrefs {
+  agenda: boolean;
+  goals: boolean;
+  finance: boolean;
+  habits: boolean;
+  dailySummary: boolean;
+  expenseAlerts: boolean;
+}

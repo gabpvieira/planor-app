@@ -16,11 +16,14 @@ import {
   Sparkles,
   Menu,
   X,
+  Settings,
 } from "lucide-react";
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Switch } from "@/components/ui/switch";
 import { PlanorLogo } from "@/components/ui/planor-logo";
+import { useTheme } from "@/components/theme-provider";
+import { Moon, Sun } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -29,30 +32,102 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { useSidebarState } from "@/hooks/use-sidebar";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 
-const menuItems = [
-  { title: "Dashboard", url: "/app", icon: LayoutDashboard },
-  { title: "Command Center", url: "/app/command", icon: Sparkles, highlight: true },
-  { title: "Agenda", url: "/app/agenda", icon: Calendar },
-  { title: "Tarefas", url: "/app/tasks", icon: CheckSquare },
-  { title: "Treinos", url: "/app/workouts", icon: Dumbbell },
-  { title: "Nutrição", url: "/app/nutrition", icon: Utensils },
-  { title: "Hábitos", url: "/app/habits", icon: TrendingUp },
-  { title: "Metas", url: "/app/goals", icon: Target },
-  { title: "Finanças", url: "/app/finance", icon: DollarSign },
-  { title: "Conhecimento", url: "/app/knowledge", icon: BookOpen },
-  { title: "Notas", url: "/app/notes", icon: StickyNote },
+// Menu items organizados por categoria
+const menuGroups = [
+  {
+    label: "GERAL",
+    items: [
+      { title: "Command Center", url: "/app/command", icon: Sparkles, isCommandCenter: true },
+      { title: "Dashboard", url: "/app", icon: LayoutDashboard },
+      { title: "Agenda", url: "/app/agenda", icon: Calendar },
+    ],
+  },
+  {
+    label: "GESTÃO",
+    items: [
+      { title: "Tarefas", url: "/app/tasks", icon: CheckSquare },
+      { title: "Metas", url: "/app/goals", icon: Target },
+      { title: "Hábitos", url: "/app/habits", icon: TrendingUp },
+    ],
+  },
+  {
+    label: "SAÚDE",
+    items: [
+      { title: "Treinos", url: "/app/workouts", icon: Dumbbell },
+      { title: "Nutrição", url: "/app/nutrition", icon: Utensils },
+    ],
+  },
+  {
+    label: "FINANÇAS",
+    items: [
+      { title: "Finanças", url: "/app/finance", icon: DollarSign },
+    ],
+  },
+  {
+    label: "CONHECIMENTO",
+    items: [
+      { title: "Conhecimento", url: "/app/knowledge", icon: BookOpen },
+      { title: "Notas", url: "/app/notes", icon: StickyNote },
+    ],
+  },
 ];
+
+// Variantes de animação para stagger
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.03,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, x: -20 },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 300,
+      damping: 24,
+    },
+  },
+};
+
+const groupVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05,
+    },
+  },
+};
 
 export function AppSidebar() {
   const [location] = useLocation();
   const { user, signOut } = useSupabaseAuth();
   const { isCollapsed, setIsCollapsed, isMobileMenuOpen, setIsMobileMenuOpen } = useSidebarState();
+  const [isProfileHovered, setIsProfileHovered] = useState(false);
+  const [hasAnimated, setHasAnimated] = useState(false);
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const toggleSidebar = () => setIsCollapsed(!isCollapsed);
   const toggleMobileMenu = () => setIsMobileMenuOpen?.(!isMobileMenuOpen);
   const closeMobileMenu = () => setIsMobileMenuOpen?.(false);
+
+  // Marcar que a animação inicial já ocorreu
+  useEffect(() => {
+    const timer = setTimeout(() => setHasAnimated(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -79,182 +154,328 @@ export function AppSidebar() {
       {/* Mobile Menu Button */}
       <button
         onClick={toggleMobileMenu}
-        className="md:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-xl bg-background/95 backdrop-blur-sm border border-border shadow-lg hover:bg-accent transition-colors"
+        className="md:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border shadow-lg hover:bg-accent transition-all duration-300"
         aria-label="Toggle menu"
       >
         {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
       </button>
 
       {/* Mobile Overlay */}
-      {isMobileMenuOpen && (
-        <div
-          className="md:hidden fixed inset-0 bg-black/60 z-[45] backdrop-blur-sm animate-in fade-in duration-200"
-          onClick={closeMobileMenu}
-        />
-      )}
+      <AnimatePresence>
+        {isMobileMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden fixed inset-0 bg-black/60 z-[45] backdrop-blur-sm"
+            onClick={closeMobileMenu}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sidebar */}
       <aside
         className={cn(
-          // Base styles
-          "fixed top-0 left-0 h-full bg-background border-r border-border flex flex-col",
+          // Base styles - macOS Sonoma style
+          "fixed top-0 left-0 h-full flex flex-col",
+          // Translucent background with blur - theme aware
+          "bg-background/70 backdrop-blur-2xl",
+          // Remove hard borders
+          "border-r border-border/50",
           // Desktop styles
           "md:z-auto",
-          isCollapsed ? "md:w-[72px]" : "md:w-[240px]",
+          isCollapsed ? "md:w-[72px]" : "md:w-[260px]",
           // Mobile styles
           "w-[280px] z-[50]",
-          "transition-transform duration-300 ease-out",
+          "transition-all duration-300 ease-out",
           // Mobile visibility
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-          // Shadow
-          "shadow-2xl md:shadow-none"
+          // Subtle shadow
+          "shadow-xl"
         )}
         data-collapsed={isCollapsed}
       >
-        {/* Header */}
+        {/* Header - Logo only */}
         <div className={cn(
-          "flex items-center border-b border-border",
-          isCollapsed ? "md:justify-center md:p-3" : "justify-between p-4"
+          "flex items-center px-4 py-3",
+          isCollapsed && "md:justify-center md:px-3 md:py-2"
         )}>
-          <div className="flex items-center gap-3">
-            {/* Mobile: always show logo */}
-            <div className="md:hidden">
-              <PlanorLogo size={100} />
-            </div>
-            {/* Desktop: conditional logo */}
-            <div className="hidden md:block">
-              {isCollapsed ? (
-                <img 
-                  src="/favoricon.png" 
-                  alt="Planor" 
-                  className="w-8 h-8"
-                />
-              ) : (
-                <PlanorLogo size={100} />
-              )}
-            </div>
+          {/* Mobile: always show logo */}
+          <div className="md:hidden drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+            <PlanorLogo size={100} />
           </div>
-          
-          <div className="flex items-center gap-2">
-            {!isCollapsed && <div className="hidden md:block"><ThemeToggle /></div>}
-            <button
-              onClick={toggleSidebar}
-              className="hidden md:flex items-center justify-center w-7 h-7 rounded-lg hover:bg-accent transition-colors"
-              aria-label={isCollapsed ? "Expandir menu" : "Recolher menu"}
-            >
-              {isCollapsed ? (
-                <ChevronRight className="size-4" />
-              ) : (
-                <ChevronLeft className="size-4" />
-              )}
-            </button>
+          {/* Desktop: conditional logo */}
+          <div className="hidden md:block">
+            {isCollapsed ? (
+              <img 
+                src="/favoricon.png" 
+                alt="Planor" 
+                className="w-8 h-8 drop-shadow-[0_0_10px_rgba(59,130,246,0.4)]"
+              />
+            ) : (
+              <div className="drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                <PlanorLogo size={100} />
+              </div>
+            )}
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3">
-          {/* Section Label */}
-          {(!isCollapsed || isMobile) && (
-            <span className="block px-3 py-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              MENU
-            </span>
-          )}
-          
-          <ul className="space-y-1">
-            {menuItems.map((item) => {
-              const isActive = location === item.url;
-              const Icon = item.icon;
-              
-              const menuButton = (
-                <li key={item.title}>
-                  <Link
-                    href={item.url}
+        <nav className="flex-1 overflow-y-auto px-4 pb-4">
+          <motion.div
+            variants={containerVariants}
+            initial={hasAnimated ? "visible" : "hidden"}
+            animate="visible"
+            className="space-y-1"
+          >
+            {menuGroups.map((group, groupIndex) => (
+              <motion.div 
+                key={group.label} 
+                variants={groupVariants}
+                className="mb-2"
+              >
+                {/* Section Label */}
+                {(!isCollapsed || isMobile) && (
+                  <motion.span 
+                    variants={itemVariants}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
-                      "hover:bg-accent/50",
-                      isActive && "bg-primary/10 text-primary font-medium",
-                      !isActive && "text-foreground/70 hover:text-foreground",
-                      isCollapsed && !isMobile && "justify-center"
+                      "block px-3 mb-2 text-[10px] font-bold text-muted-foreground uppercase tracking-widest",
+                      groupIndex > 0 && "mt-4"
                     )}
                   >
-                    <Icon className={cn(
-                      "size-5 shrink-0",
-                      isActive && "text-primary"
-                    )} />
-                    {(!isCollapsed || isMobile) && (
-                      <span className="text-sm">{item.title}</span>
-                    )}
-                  </Link>
-                </li>
-              );
+                    {group.label}
+                  </motion.span>
+                )}
+                
+                <ul className="space-y-1">
+                  {group.items.map((item) => {
+                    const isActive = location === item.url;
+                    const Icon = item.icon;
+                    
+                    const menuButton = (
+                      <motion.li key={item.title} variants={itemVariants}>
+                        <Link
+                          href={item.url}
+                          className={cn(
+                            "relative flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                            // Estado normal
+                            "text-muted-foreground hover:bg-accent hover:text-foreground",
+                            // Estado ativo
+                            isActive && "bg-accent text-foreground",
+                            isCollapsed && !isMobile && "justify-center"
+                          )}
+                        >
+                          {/* Pílula indicadora de seleção */}
+                          {isActive && (
+                            <motion.div
+                              layoutId="activeIndicator"
+                              className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-blue-500 rounded-full"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                            />
+                          )}
+                          
+                          {/* Ícone com estilo especial para Command Center */}
+                          {item.isCommandCenter ? (
+                            <div className="relative">
+                              <Icon 
+                                className={cn(
+                                  "w-5 h-5 shrink-0",
+                                  isActive ? "text-foreground" : "text-transparent"
+                                )} 
+                                strokeWidth={1.5}
+                                style={{
+                                  background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)",
+                                  WebkitBackgroundClip: "text",
+                                  backgroundClip: "text",
+                                  stroke: isActive ? "currentColor" : "url(#commandGradient)",
+                                }}
+                              />
+                              <svg width="0" height="0">
+                                <defs>
+                                  <linearGradient id="commandGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="#3b82f6" />
+                                    <stop offset="100%" stopColor="#8b5cf6" />
+                                  </linearGradient>
+                                </defs>
+                              </svg>
+                              <Icon 
+                                className="w-5 h-5 shrink-0 absolute inset-0"
+                                strokeWidth={1.5}
+                                stroke="url(#commandGradient)"
+                              />
+                            </div>
+                          ) : (
+                            <Icon 
+                              className={cn(
+                                "w-5 h-5 shrink-0",
+                                isActive && "text-foreground"
+                              )} 
+                              strokeWidth={1.5}
+                            />
+                          )}
+                          
+                          {(!isCollapsed || isMobile) && (
+                            <span className="text-sm font-medium">{item.title}</span>
+                          )}
+                        </Link>
+                      </motion.li>
+                    );
 
-              // Show tooltip only on desktop when collapsed
-              if (isCollapsed && !isMobile) {
-                return (
-                  <Tooltip key={item.title}>
-                    <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
-                    <TooltipContent side="right" sideOffset={12}>
-                      {item.title}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              }
+                    // Show tooltip only on desktop when collapsed
+                    if (isCollapsed && !isMobile) {
+                      return (
+                        <Tooltip key={item.title}>
+                          <TooltipTrigger asChild>{menuButton}</TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={12}>
+                            {item.title}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    }
 
-              return menuButton;
-            })}
-          </ul>
+                    return menuButton;
+                  })}
+                </ul>
+              </motion.div>
+            ))}
+          </motion.div>
         </nav>
 
-        {/* Footer */}
-        <div className="border-t border-border p-3 space-y-3">
-          {/* User Info */}
+        {/* Footer - User Profile Card */}
+        <div className="p-4 space-y-3">
+          {/* Theme Toggle */}
           <div className={cn(
-            "flex items-center gap-3",
-            isCollapsed && !isMobile && "justify-center"
+            "flex items-center justify-between px-3 py-2 rounded-lg",
+            isCollapsed && !isMobile && "justify-center px-0"
           )}>
-            <Avatar className="size-9 shrink-0">
-              <AvatarImage src={user?.user_metadata?.avatar_url} />
-              <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                {user?.email?.[0]?.toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
             {(!isCollapsed || isMobile) && (
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">
-                  {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">
-                  {user?.email}
-                </p>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                {isDark ? <Moon className="w-4 h-4" strokeWidth={1.5} /> : <Sun className="w-4 h-4" strokeWidth={1.5} />}
+                <span className="text-sm">Modo escuro</span>
               </div>
+            )}
+            {isCollapsed && !isMobile ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Switch
+                      checked={isDark}
+                      onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                      className="data-[state=checked]:bg-blue-500"
+                    />
+                  </div>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12}>
+                  Modo escuro
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Switch
+                checked={isDark}
+                onCheckedChange={(checked) => setTheme(checked ? "dark" : "light")}
+                className="data-[state=checked]:bg-blue-500"
+              />
             )}
           </div>
 
-          {/* Logout Button */}
-          {isCollapsed && !isMobile ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  onClick={() => signOut()}
-                  className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
-                  aria-label="Sair"
-                >
-                  <LogOut className="size-4" />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side="right" sideOffset={12}>
-                Sair
-              </TooltipContent>
-            </Tooltip>
-          ) : (
-            <button
-              onClick={() => signOut()}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors text-sm font-medium"
+          {/* Collapse Toggle */}
+          <button
+            onClick={toggleSidebar}
+            className={cn(
+              "hidden md:flex items-center gap-2 w-full px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-all duration-200",
+              isCollapsed && "justify-center"
+            )}
+          >
+            {isCollapsed ? (
+              <ChevronRight className="w-5 h-5" strokeWidth={1.5} />
+            ) : (
+              <>
+                <ChevronLeft className="w-5 h-5" strokeWidth={1.5} />
+                <span className="text-sm">Recolher menu</span>
+              </>
+            )}
+          </button>
+
+          {/* User Profile Card - Link to Settings */}
+          <Link href="/app/settings">
+            <motion.div
+              className={cn(
+                "relative rounded-xl p-3 transition-all duration-300 cursor-pointer",
+                "bg-accent/50 hover:bg-accent",
+                "border border-border/50",
+                isCollapsed && !isMobile && "p-2"
+              )}
+              onMouseEnter={() => setIsProfileHovered(true)}
+              onMouseLeave={() => setIsProfileHovered(false)}
             >
-              <LogOut className="size-4" />
-              <span>Sair</span>
-            </button>
-          )}
+              <div className={cn(
+                "flex items-center gap-3",
+                isCollapsed && !isMobile && "justify-center"
+              )}>
+                <Avatar className="size-9 shrink-0 ring-2 ring-border">
+                  <AvatarImage src={user?.user_metadata?.avatar_url} />
+                  <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white text-sm font-medium">
+                    {user?.email?.[0]?.toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                {(!isCollapsed || isMobile) && (
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {user?.user_metadata?.full_name || user?.email?.split("@")[0]}
+                      </p>
+                      <AnimatePresence>
+                        {isProfileHovered && (
+                          <motion.div
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.8 }}
+                            transition={{ duration: 0.15 }}
+                          >
+                            <Settings className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={1.5} />
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </Link>
+
+          {/* Logout Button */}
+          <div className="mt-3">
+            {isCollapsed && !isMobile ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => signOut()}
+                    className="w-full flex items-center justify-center p-2 rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all duration-200"
+                    aria-label="Sair"
+                  >
+                    <LogOut className="w-5 h-5" strokeWidth={1.5} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="right" sideOffset={12}>
+                  Sair
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <button
+                onClick={() => signOut()}
+                className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-muted-foreground hover:bg-red-500/10 hover:text-red-500 transition-all duration-200 text-sm font-medium"
+              >
+                <LogOut className="w-5 h-5" strokeWidth={1.5} />
+                <span>Sair</span>
+              </button>
+            )}
+          </div>
         </div>
       </aside>
     </TooltipProvider>

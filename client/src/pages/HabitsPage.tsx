@@ -1018,9 +1018,9 @@ export default function HabitsPage() {
     habitsByTimeOfDay.evening.length > 0;
 
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-7xl">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Hábitos</h1>
           <p className="text-muted-foreground text-sm mt-0.5">

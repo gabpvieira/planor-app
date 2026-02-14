@@ -85,7 +85,7 @@ export default {
       fontFamily: {
         sans: ['Poppins', 'Arial', 'sans-serif'],
         serif: ["var(--font-serif)"],
-        mono: ['"SF Mono"', 'Monaco', 'Consolas', 'monospace'],
+        mono: ['"JetBrains Mono"', '"SF Mono"', 'Monaco', 'Consolas', 'monospace'],
       },
       fontSize: {
         'xs': ['0.75rem', { lineHeight: '1.5' }],      // 12px

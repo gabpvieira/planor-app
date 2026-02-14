@@ -248,7 +248,7 @@ export default function StatementImport({ open, onOpenChange, accountId: initial
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-[95vw] sm:max-w-2xl max-h-[90vh] flex flex-col p-0 gap-0 mx-2 sm:mx-auto">
         <DialogHeader className="p-6 pb-4 border-b border-border/40">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <Sparkles className="size-5 text-primary" />

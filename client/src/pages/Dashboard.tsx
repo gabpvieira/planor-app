@@ -1,6 +1,7 @@
 import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { useSupabaseTasks } from "@/hooks/use-supabase-tasks";
 import { useSupabaseHabits } from "@/hooks/use-supabase-habits";
+import { useUserSettings } from "@/hooks/use-user-settings";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle2, Circle, Clock, CalendarDays, ArrowRight, Target, Upload } from "lucide-react";
 import { format } from "date-fns";
@@ -15,6 +16,7 @@ export default function Dashboard() {
   const { user } = useSupabaseAuth();
   const { tasks } = useSupabaseTasks();
   const { habits } = useSupabaseHabits();
+  const { settings } = useUserSettings();
   const [importOpen, setImportOpen] = useState(false);
 
   const today = new Date();
@@ -24,6 +26,9 @@ export default function Dashboard() {
   const todaysTasks = tasks?.filter(t => !t.completed).slice(0, 5) || [];
   const todaysHabits = habits?.slice(0, 4) || [];
 
+  // Get display name with fallbacks
+  const displayName = settings.displayName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuário';
+
   const greeting = () => {
     const hour = today.getHours();
     if (hour < 12) return "Bom dia";
@@ -32,9 +37,9 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       <PageHeader
-        title={`${greeting()}, ${user?.email?.split('@')[0] || 'Usuário'}.`}
+        title={`${greeting()}, ${displayName}.`}
         description={`${formattedDate} — Veja o que está acontecendo hoje.`}
         actions={
           <div className="flex gap-2 sm:gap-3 w-full sm:w-auto">

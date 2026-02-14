@@ -63,8 +63,36 @@ if (!supabaseUrl || !supabaseAnonKey) {
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: true,
+      // Configuração de storage para melhor controle
+      storage: {
+        getItem: (key: string) => {
+          try {
+            return localStorage.getItem(key);
+          } catch (e) {
+            console.warn('[Supabase] Storage getItem error:', e);
+            return null;
+          }
+        },
+        setItem: (key: string, value: string) => {
+          try {
+            localStorage.setItem(key, value);
+          } catch (e) {
+            console.warn('[Supabase] Storage setItem error:', e);
+          }
+        },
+        removeItem: (key: string) => {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.warn('[Supabase] Storage removeItem error:', e);
+          }
+        },
+      },
     },
   });
+  
+  // Log de inicialização bem-sucedida
+  console.log('[Supabase] Client initialized successfully');
 }
 
 export const supabase = supabaseClient;

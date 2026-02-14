@@ -748,6 +748,16 @@ export interface Database {
           title: string
           content: string | null
           topic: string | null
+          type: 'note' | 'article' | 'book' | 'video' | 'podcast' | 'ai_insight' | 'link'
+          tags: string[]
+          progress: number
+          ai_summary: string | null
+          key_takeaways: string[] | null
+          is_favorite: boolean
+          is_archived: boolean
+          is_to_read: boolean
+          source_url: string | null
+          last_reviewed_at: string | null
           created_at: string
           updated_at: string
         }
@@ -757,6 +767,16 @@ export interface Database {
           title: string
           content?: string | null
           topic?: string | null
+          type?: 'note' | 'article' | 'book' | 'video' | 'podcast' | 'ai_insight' | 'link'
+          tags?: string[]
+          progress?: number
+          ai_summary?: string | null
+          key_takeaways?: string[] | null
+          is_favorite?: boolean
+          is_archived?: boolean
+          is_to_read?: boolean
+          source_url?: string | null
+          last_reviewed_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -766,10 +786,192 @@ export interface Database {
           title?: string
           content?: string | null
           topic?: string | null
+          type?: 'note' | 'article' | 'book' | 'video' | 'podcast' | 'ai_insight' | 'link'
+          tags?: string[]
+          progress?: number
+          ai_summary?: string | null
+          key_takeaways?: string[] | null
+          is_favorite?: boolean
+          is_archived?: boolean
+          is_to_read?: boolean
+          source_url?: string | null
+          last_reviewed_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      nutrition_profiles: {
+        Row: {
+          id: string
+          user_id: string // UUID stored as string in JS
+          weight: number | null
+          height: number | null
+          age: number | null
+          gender: 'male' | 'female' | 'other' | null
+          activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+          goal: 'lose' | 'maintain' | 'gain'
+          daily_calories_target: number
+          protein_target: number
+          carbs_target: number
+          fat_target: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          weight?: number | null
+          height?: number | null
+          age?: number | null
+          gender?: 'male' | 'female' | 'other' | null
+          activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+          goal?: 'lose' | 'maintain' | 'gain'
+          daily_calories_target?: number
+          protein_target?: number
+          carbs_target?: number
+          fat_target?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          weight?: number | null
+          height?: number | null
+          age?: number | null
+          gender?: 'male' | 'female' | 'other' | null
+          activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active'
+          goal?: 'lose' | 'maintain' | 'gain'
+          daily_calories_target?: number
+          protein_target?: number
+          carbs_target?: number
+          fat_target?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      daily_food_logs: {
+        Row: {
+          id: number
+          user_id: string
+          food_name: string
+          description: string | null
+          calories: number
+          protein: number
+          carbs: number
+          fat: number
+          fiber: number
+          serving_size: string | null
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          logged_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          food_name: string
+          description?: string | null
+          calories?: number
+          protein?: number
+          carbs?: number
+          fat?: number
+          fiber?: number
+          serving_size?: string | null
+          meal_type: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          logged_at?: string
+          created_at?: string
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          food_name?: string
+          description?: string | null
+          calories?: number
+          protein?: number
+          carbs?: number
+          fat?: number
+          fiber?: number
+          serving_size?: string | null
+          meal_type?: 'breakfast' | 'lunch' | 'dinner' | 'snack'
+          logged_at?: string
+          created_at?: string
+        }
+      }
+      meal_plans: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          plan_json: MealPlanJson
+          total_days: number
+          daily_avg_calories: number | null
+          status: 'active' | 'archived' | 'completed'
+          generated_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          plan_json: MealPlanJson
+          total_days?: number
+          daily_avg_calories?: number | null
+          status?: 'active' | 'archived' | 'completed'
+          generated_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          plan_json?: MealPlanJson
+          total_days?: number
+          daily_avg_calories?: number | null
+          status?: 'active' | 'archived' | 'completed'
+          generated_at?: string
           created_at?: string
           updated_at?: string
         }
       }
     }
+  }
+}
+
+// Meal Plan JSON structure
+export interface MealPlanDay {
+  day: number
+  dayName: string
+  meals: {
+    breakfast: MealPlanMeal[]
+    lunch: MealPlanMeal[]
+    dinner: MealPlanMeal[]
+    snacks: MealPlanMeal[]
+  }
+  totals: {
+    calories: number
+    protein: number
+    carbs: number
+    fat: number
+  }
+}
+
+export interface MealPlanMeal {
+  name: string
+  portion: string
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+}
+
+export interface MealPlanJson {
+  days: MealPlanDay[]
+  summary: {
+    avgCalories: number
+    avgProtein: number
+    avgCarbs: number
+    avgFat: number
   }
 }

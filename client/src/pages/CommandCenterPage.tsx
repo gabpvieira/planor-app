@@ -1,6 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Check, X, Loader2, ArrowRight, Keyboard, Send } from 'lucide-react';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { 
+  Mic, Check, X, Loader2, ArrowRight, Keyboard, Send,
+  Wallet, TrendingDown, TrendingUp, CalendarDays, Activity, 
+  CheckCircle, ClipboardList, Zap, Flame, Sparkles
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -20,6 +24,69 @@ interface CommandResult {
   message?: string;
 }
 
+interface FeedbackItem {
+  type: 'success' | 'error';
+  message: string;
+  action?: CommandAction;
+  id: string;
+}
+
+// Configuração de estilo por tipo de ação
+const ACTION_STYLES = {
+  finance: {
+    icon: Wallet,
+    secondaryIcon: TrendingDown,
+    incomeIcon: TrendingUp,
+    borderColor: 'border-emerald-500/30',
+    bgGradient: 'from-emerald-500/10 to-emerald-600/5',
+    iconBg: 'bg-emerald-500/15',
+    iconColor: 'text-emerald-400',
+    accentColor: 'text-emerald-400',
+    label: 'Finanças',
+  },
+  agenda: {
+    icon: CalendarDays,
+    borderColor: 'border-violet-500/30',
+    bgGradient: 'from-violet-500/10 to-purple-600/5',
+    iconBg: 'bg-violet-500/15',
+    iconColor: 'text-violet-400',
+    accentColor: 'text-violet-400',
+    label: 'Agenda',
+  },
+  habit: {
+    icon: Zap,
+    secondaryIcon: Flame,
+    borderColor: 'border-sky-500/30',
+    bgGradient: 'from-sky-500/10 to-blue-600/5',
+    iconBg: 'bg-sky-500/15',
+    iconColor: 'text-sky-400',
+    accentColor: 'text-sky-400',
+    label: 'Hábitos',
+  },
+  task: {
+    icon: ClipboardList,
+    borderColor: 'border-amber-500/30',
+    bgGradient: 'from-amber-500/10 to-orange-600/5',
+    iconBg: 'bg-amber-500/15',
+    iconColor: 'text-amber-400',
+    accentColor: 'text-amber-400',
+    label: 'Tarefas',
+  },
+  default: {
+    icon: Sparkles,
+    borderColor: 'border-white/10',
+    bgGradient: 'from-white/5 to-white/[0.02]',
+    iconBg: 'bg-white/10',
+    iconColor: 'text-white/70',
+    accentColor: 'text-white/70',
+    label: 'Comando',
+  },
+};
+
+// Formatar valor monetário
+const formatCurrency = (value: number) => 
+  new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
 export default function CommandCenterPage() {
   const { user } = useSupabaseAuth();
   const { toast } = useToast();
@@ -28,7 +95,7 @@ export default function CommandCenterPage() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [feedbackList, setFeedbackList] = useState<Array<{ type: 'success' | 'error'; message: string; action?: CommandAction; id: string }>>([]);
+  const [feedbackList, setFeedbackList] = useState<FeedbackItem[]>([]);
   const [manualInput, setManualInput] = useState('');
   const [showManualInput, setShowManualInput] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -38,12 +105,11 @@ export default function CommandCenterPage() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
-  // ✅ Inicializa apenas no client-side
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Keyboard shortcut: Space (hold)
+  // Atalho de teclado: Espaço (segurar)
   useEffect(() => {
     if (!isClient) return;
 
@@ -51,16 +117,12 @@ export default function CommandCenterPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === 'Space' && !isListening && e.target === document.body) {
         e.preventDefault();
-        spaceHoldTimer = setTimeout(() => {
-          startListening();
-        }, 500);
+        spaceHoldTimer = setTimeout(() => startListening(), 500);
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.code === 'Space') {
-        clearTimeout(spaceHoldTimer);
-      }
+      if (e.code === 'Space') clearTimeout(spaceHoldTimer);
     };
 
     document.addEventListener('keydown', handleKeyDown);
@@ -74,79 +136,41 @@ export default function CommandCenterPage() {
 
   const startListening = async () => {
     if (!isClient) {
-      toast({
-        title: 'Carregando...',
-        description: 'Aguarde a página carregar completamente.',
-        variant: 'default',
-      });
+      toast({ title: 'Carregando...', description: 'Aguarde a página carregar.', variant: 'default' });
       return;
     }
 
     try {
-      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      // Reset audio chunks
       audioChunksRef.current = [];
       
-      // Create MediaRecorder with webm format (widely supported)
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm') 
-        ? 'audio/webm' 
-        : 'audio/mp4';
-      
+      const mimeType = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4';
       const mediaRecorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = mediaRecorder;
       
-      // Collect audio data
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
       
-      // Handle recording stop
       mediaRecorder.onstop = async () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-        
-        // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
-        
-        // Convert to file and transcribe
-        const audioFile = new File([audioBlob], 'audio.webm', {
-          type: mimeType,
-          lastModified: Date.now(),
-        });
-        
-        console.log('[Audio] Recording stopped, file size:', audioFile.size, 'bytes');
+        const audioFile = new File([audioBlob], 'audio.webm', { type: mimeType, lastModified: Date.now() });
         await transcribeWithWhisper(audioFile);
       };
       
-      // Start recording
       mediaRecorder.start();
       setIsListening(true);
       setIsRecording(true);
       setTranscript('');
       setFeedbackList([]);
       finalTranscriptRef.current = '';
-      
-      console.log('[Audio] Recording started with MediaRecorder');
     } catch (error: any) {
-      console.error('[Audio] Error accessing microphone:', error);
-      
       if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
-        toast({
-          title: '🎤 Permissão Negada',
-          description: 'Por favor, permita o acesso ao microfone nas configurações do navegador.',
-          variant: 'destructive',
-        });
+        toast({ title: '🎤 Permissão Negada', description: 'Permita o acesso ao microfone nas configurações.', variant: 'destructive' });
       } else {
-        toast({
-          title: 'Erro ao acessar microfone',
-          description: 'Não foi possível iniciar a gravação. Use o campo de texto abaixo.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Erro ao acessar microfone', description: 'Use o campo de texto abaixo.', variant: 'destructive' });
       }
-      
       setShowManualInput(true);
       setIsListening(false);
       setIsRecording(false);
@@ -158,127 +182,49 @@ export default function CommandCenterPage() {
       setIsListening(false);
       return;
     }
-
     try {
-      console.log('[Audio] Stopping recording...');
-      
-      // Stop the MediaRecorder (will trigger onstop event)
-      if (mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
-      
+      if (mediaRecorderRef.current.state !== 'inactive') mediaRecorderRef.current.stop();
       setIsRecording(false);
       setIsListening(false);
     } catch (error) {
-      console.error('[Audio] Error stopping recording:', error);
-      toast({
-        title: 'Erro ao parar gravação',
-        description: 'Não foi possível processar o áudio. Tente novamente.',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro ao parar gravação', description: 'Tente novamente.', variant: 'destructive' });
       setIsListening(false);
       setIsRecording(false);
     }
   };
 
   const transcribeWithWhisper = async (audioFile: File) => {
-    console.log('[Whisper] Starting transcription...');
-    console.log('[Whisper] Audio file:', {
-      name: audioFile.name,
-      size: audioFile.size,
-      type: audioFile.type
-    });
-    
     setIsProcessing(true);
     setIsListening(false);
     
     try {
-      // Verificar autenticação
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[Whisper] Auth status:', {
-        authenticated: !!session,
-        hasUser: !!user,
-        userId: user?.id
-      });
-
       if (!session) {
-        console.error('[Whisper] User not authenticated');
-        toast({
-          title: 'Não autenticado',
-          description: 'Você precisa estar logado para usar o assistente de voz.',
-          variant: 'destructive',
-        });
+        toast({ title: 'Não autenticado', description: 'Faça login para usar o assistente.', variant: 'destructive' });
         setIsProcessing(false);
         setShowManualInput(true);
         return;
       }
 
-      // Criar FormData com o áudio
       const formData = new FormData();
       formData.append('audio', audioFile);
 
-      console.log('[Whisper] Invoking transcribe-audio Edge Function...');
-      
-      // Chamar Edge Function de transcrição
-      const { data, error } = await supabase.functions.invoke('transcribe-audio', {
-        body: formData,
-      });
-
-      console.log('[Whisper] Response:', { data, error });
+      const { data, error } = await supabase.functions.invoke('transcribe-audio', { body: formData });
 
       if (error) {
-        console.error('[Whisper] Error details:', {
-          message: error.message,
-          status: error.status,
-          statusText: error.statusText,
-          context: error.context
-        });
-        
-        // Tratamento específico para erro 401
         if (error.status === 401) {
-          toast({
-            title: 'Erro de Autenticação',
-            description: 'Sua sessão expirou. Por favor, faça login novamente.',
-            variant: 'destructive',
-          });
-          setIsProcessing(false);
-          setShowManualInput(true);
-          return;
+          toast({ title: 'Sessão expirada', description: 'Faça login novamente.', variant: 'destructive' });
         }
-        
         throw error;
       }
 
-      if (!data || !data.text) {
-        console.error('[Whisper] Invalid response:', data);
-        throw new Error('Resposta inválida da transcrição');
-      }
+      if (!data?.text) throw new Error('Resposta inválida');
 
-      console.log('[Whisper] Transcription successful:', data.text);
       setTranscript(data.text);
       finalTranscriptRef.current = data.text;
-      
-      // Process command immediately
-      if (data.text.trim()) {
-        await processCommand(data.text);
-      }
+      if (data.text.trim()) await processCommand(data.text);
     } catch (error: any) {
-      console.error('[Whisper] Transcription failed:', {
-        error,
-        message: error?.message,
-        stack: error?.stack
-      });
-      
-      // Mensagem de erro amigável para o usuário
-      const errorMessage = error?.message || 'Erro desconhecido';
-      
-      toast({
-        title: 'Erro na transcrição',
-        description: `Não foi possível transcrever o áudio: ${errorMessage}. Tente novamente ou use o campo de texto.`,
-        variant: 'destructive',
-      });
-      
-      // Mostrar input manual como fallback
+      toast({ title: 'Erro na transcrição', description: 'Tente novamente ou use o campo de texto.', variant: 'destructive' });
       setShowManualInput(true);
     } finally {
       setIsProcessing(false);
@@ -295,69 +241,42 @@ export default function CommandCenterPage() {
   };
 
   const processCommand = async (command: string) => {
-    console.log('[Command] Starting to process:', command);
     setIsProcessing(true);
 
     try {
-      console.log('[Command] Invoking Supabase function...');
-      const { data, error } = await supabase.functions.invoke('process-command', {
-        body: { command },
-      });
-
-      console.log('[Command] Response:', { data, error });
-
-      if (error) {
-        console.error('[Command] Supabase error:', error);
-        throw error;
-      }
+      const { data, error } = await supabase.functions.invoke('process-command', { body: { command } });
+      if (error) throw error;
 
       const result: CommandResult = data;
-      console.log('[Command] Parsed result:', result);
 
-      // Handle multiple actions
       if (result.actions && Array.isArray(result.actions)) {
-        console.log('[Command] Processing multiple actions:', result.actions.length);
-        const newFeedbacks: typeof feedbackList = [];
-        
+        const newFeedbacks: FeedbackItem[] = [];
         for (const action of result.actions) {
           await executeAction(action);
           newFeedbacks.push({
             type: 'success',
             message: getSuccessMessage(action),
-            action: action,
+            action,
             id: `${Date.now()}-${Math.random()}`,
           });
         }
-        
         setFeedbackList(newFeedbacks);
-      }
-      // Handle single action
-      else if (result.action) {
+      } else if (result.action) {
         if (result.action === 'unknown' || result.action === 'error') {
-          setFeedbackList([{
-            type: 'error',
-            message: result.message || 'Não entendi, pode repetir?',
-            id: `${Date.now()}-${Math.random()}`,
-          }]);
+          setFeedbackList([{ type: 'error', message: result.message || 'Não entendi, pode repetir?', id: `${Date.now()}` }]);
         } else {
           await executeAction(result as CommandAction);
           setFeedbackList([{
             type: 'success',
             message: getSuccessMessage(result as CommandAction),
             action: result as CommandAction,
-            id: `${Date.now()}-${Math.random()}`,
+            id: `${Date.now()}`,
           }]);
         }
       }
-    } catch (error: any) {
-      console.error('[Command] Error processing command:', error);
-      setFeedbackList([{
-        type: 'error',
-        message: 'Erro ao processar comando. Tente novamente.',
-        id: `${Date.now()}-${Math.random()}`,
-      }]);
+    } catch (error) {
+      setFeedbackList([{ type: 'error', message: 'Erro ao processar. Tente novamente.', id: `${Date.now()}` }]);
     } finally {
-      console.log('[Command] Processing complete');
       setIsProcessing(false);
     }
   };
@@ -368,353 +287,373 @@ export default function CommandCenterPage() {
     switch (action.action) {
       case 'finance':
         await supabase.from('finance_transactions').insert({
-          user_id: user.id,
-          type: action.type,
-          amount: action.amount,
-          category: action.category || 'outros',
-          description: action.description,
-          date: action.date || new Date().toISOString(),
-          paid: true,
+          user_id: user.id, type: action.type, amount: action.amount,
+          category: action.category || 'outros', description: action.description,
+          date: action.date || new Date().toISOString(), paid: true,
         });
         break;
-
       case 'habit':
         if (action.operation === 'create') {
           await supabase.from('habits').insert({
-            user_id: user.id,
-            title: action.title,
-            frequency: action.frequency || 'daily',
-            target_count: 1,
+            user_id: user.id, title: action.title, frequency: action.frequency || 'daily', target_count: 1,
           });
         } else {
-          // Mark habit as complete (simplified - would need to find habit by name)
-          const { data: habits } = await supabase
-            .from('habits')
-            .select('id')
-            .eq('user_id', user.id)
-            .ilike('title', `%${action.habit_name}%`)
-            .limit(1);
-
-          if (habits && habits.length > 0) {
+          const { data: habits } = await supabase.from('habits').select('id')
+            .eq('user_id', user.id).ilike('title', `%${action.habit_name}%`).limit(1);
+          if (habits?.length) {
             await supabase.from('habit_logs').insert({
-              habit_id: habits[0].id,
-              date: action.date || new Date().toISOString().split('T')[0],
-              count: 1,
-              completed: true,
+              habit_id: habits[0].id, date: action.date || new Date().toISOString().split('T')[0], count: 1, completed: true,
             });
           }
         }
         break;
-
       case 'agenda':
         await supabase.from('appointments').insert({
-          user_id: user.id,
-          title: action.title,
-          start_time: action.start_time,
-          end_time: action.end_time,
-          type: action.type || 'event',
+          user_id: user.id, title: action.title, start_time: action.start_time,
+          end_time: action.end_time, type: action.type || 'event',
         });
         break;
-
-      default:
-        throw new Error('Ação não reconhecida');
     }
   };
 
   const getSuccessMessage = (action: CommandAction): string => {
     switch (action.action) {
       case 'finance':
-        return `${action.type === 'expense' ? 'Despesa' : 'Receita'} de R$ ${action.amount} lançada!`;
+        return `${action.type === 'expense' ? 'Despesa' : 'Receita'} de ${formatCurrency(action.amount)} registrada`;
       case 'habit':
-        return action.operation === 'create' 
-          ? `Hábito "${action.title}" criado!`
-          : `Hábito "${action.habit_name}" marcado como feito!`;
+        return action.operation === 'create' ? `Hábito "${action.title}" criado` : `"${action.habit_name}" marcado como feito`;
       case 'agenda':
-        return `Evento "${action.title}" agendado!`;
+        return `"${action.title}" agendado com sucesso`;
       default:
-        return 'Comando executado com sucesso!';
+        return 'Comando executado';
     }
   };
 
   const getRedirectPath = (action: CommandAction): string => {
-    switch (action.action) {
-      case 'finance':
-        return '/app/finance';
-      case 'habit':
-        return '/app/habits';
-      case 'agenda':
-        return '/app/agenda';
-      default:
-        return '/app';
-    }
+    const paths: Record<string, string> = { finance: '/app/finance', habit: '/app/habits', agenda: '/app/agenda' };
+    return paths[action.action] || '/app';
   };
 
-  return (
-    <div className="min-h-screen bg-[#0A0A0A] relative overflow-hidden">
-      {/* Gradient Background - macOS style */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-600/10 via-transparent to-transparent" />
-      
-      {/* Noise Texture */}
-      <div className="absolute inset-0 opacity-[0.015] mix-blend-overlay pointer-events-none"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' /%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' /%3E%3C/svg%3E")`,
-        }}
-      />
+  const getActionStyle = (action?: CommandAction) => {
+    if (!action) return ACTION_STYLES.default;
+    return ACTION_STYLES[action.action as keyof typeof ACTION_STYLES] || ACTION_STYLES.default;
+  };
 
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-6">
-        <div className="w-full max-w-3xl mx-auto space-y-8">
+  // Renderiza card de ação específico por tipo
+  const renderActionCard = (feedback: FeedbackItem, index: number) => {
+    const style = getActionStyle(feedback.action);
+    const Icon = style.icon;
+
+    return (
+      <motion.div
+        key={feedback.id}
+        layout
+        initial={{ opacity: 0, y: 20, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+        transition={{ type: 'spring', stiffness: 400, damping: 30, delay: index * 0.08 }}
+        className="w-full"
+      >
+        <div className={`
+          relative overflow-hidden rounded-2xl
+          bg-gradient-to-br ${style.bgGradient}
+          border ${style.borderColor}
+          backdrop-blur-2xl shadow-2xl
+        `}>
+          {/* Glow effect */}
+          <div className={`absolute -top-20 -right-20 w-40 h-40 ${style.iconBg} rounded-full blur-3xl opacity-50`} />
           
+          <div className="relative p-5 sm:p-6">
+            <div className="flex items-start gap-4">
+              {/* Ícone */}
+              <div className={`size-12 rounded-xl ${style.iconBg} flex items-center justify-center shrink-0`}>
+                <Icon className={`size-6 ${style.iconColor}`} />
+              </div>
+
+              {/* Conteúdo */}
+              <div className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-bold uppercase tracking-widest ${style.accentColor}`}>
+                    {style.label}
+                  </span>
+                  <CheckCircle className={`size-3.5 ${style.iconColor}`} />
+                </div>
+                
+                <p className="text-base sm:text-lg font-medium text-white/95 leading-snug">
+                  {feedback.message}
+                </p>
+
+                {/* Detalhes específicos por tipo */}
+                {feedback.action && (
+                  <div className="pt-2">
+                    {feedback.action.action === 'finance' && (
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className={`font-mono font-semibold text-lg ${
+                          feedback.action.type === 'expense' ? 'text-red-400' : 'text-emerald-400'
+                        }`}>
+                          {feedback.action.type === 'expense' ? '-' : '+'}{formatCurrency(feedback.action.amount)}
+                        </span>
+                        {feedback.action.category && (
+                          <span className="px-2 py-0.5 rounded-md bg-white/5 text-white/50 text-xs">
+                            {feedback.action.category}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {feedback.action.action === 'agenda' && (
+                      <div className="flex items-center gap-2 text-sm font-mono text-violet-300/80">
+                        <CalendarDays className="size-3.5" />
+                        <span>{feedback.action.start_time || 'Horário a definir'}</span>
+                      </div>
+                    )}
+                    
+                    {feedback.action.action === 'habit' && (
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-sky-500/10">
+                          <Activity className="size-3.5 text-sky-400" />
+                          <span className="text-xs font-medium text-sky-300">1/1 hoje</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Botão de ação */}
+                {feedback.action && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.3 }}
+                    onClick={() => setLocation(getRedirectPath(feedback.action!))}
+                    className={`
+                      group inline-flex items-center gap-2 mt-3 px-4 py-2 rounded-xl
+                      bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20
+                      text-sm font-medium text-white/60 hover:text-white/90 transition-all
+                    `}
+                  >
+                    <span>Ver detalhes</span>
+                    <ArrowRight className="size-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </motion.button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
+
+  // Renderiza card de erro
+  const renderErrorCard = (feedback: FeedbackItem) => (
+    <motion.div
+      key={feedback.id}
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="w-full"
+    >
+      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-red-500/10 to-red-600/5 border border-red-500/20 backdrop-blur-2xl">
+        <div className="p-5 sm:p-6 flex items-start gap-4">
+          <div className="size-12 rounded-xl bg-red-500/15 flex items-center justify-center shrink-0">
+            <X className="size-6 text-red-400" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-red-400">Erro</span>
+            <p className="text-base font-medium text-white/90 mt-1">{feedback.message}</p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <div className="min-h-screen bg-background relative overflow-hidden w-full max-w-full">
+      {/* Background consistente com outras páginas */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-violet-500/5 to-background" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
+      
+      {/* Backdrop blur overlay */}
+      <div className="absolute inset-0 backdrop-blur-3xl bg-background/30" />
+
+      <div className="relative z-10 flex flex-col min-h-screen px-4 py-6 sm:p-8 pt-20 md:pt-8">
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+          
+          {/* Orbe no topo */}
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+            className="cursor-pointer mb-6"
+            onClick={isListening ? stopListening : startListening}
+          >
+            <ListeningOrb 
+              isListening={isListening} 
+              isProcessing={isProcessing}
+              size="lg"
+            />
+          </motion.div>
+
           {/* Header */}
           <motion.div
-            initial={{ opacity: 0, y: -20 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center space-y-3"
+            transition={{ delay: 0.1 }}
+            className="text-center space-y-2 mb-8"
           >
-            <h1 className="text-5xl font-semibold tracking-tight bg-gradient-to-br from-white via-white/90 to-white/70 bg-clip-text text-transparent">
+            <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-foreground">
               Command Center
             </h1>
-            <p className="text-base text-white/50 font-light max-w-md mx-auto">
-              Speak naturally. Your AI assistant understands and executes.
+            <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+              Fale naturalmente. Seu assistente entende e executa.
             </p>
           </motion.div>
 
-          {/* Main Orb Container */}
-          <div className="flex flex-col items-center justify-center py-16 gap-8">
-            {/* Orb */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="cursor-pointer"
-              onClick={isListening ? stopListening : startListening}
-            >
-              <ListeningOrb 
-                isListening={isListening} 
-                isProcessing={isProcessing}
-                size="lg"
-              />
-            </motion.div>
+          {/* Status */}
+          <AnimatePresence mode="wait">
+            {isProcessing ? (
+              <motion.div
+                key="processing"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center gap-3 px-5 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10 mb-6"
+              >
+                <Loader2 className="size-4 animate-spin text-primary" />
+                <span className="text-sm font-medium text-foreground/80">Processando seu comando...</span>
+              </motion.div>
+            ) : isListening ? (
+              <motion.div
+                key="listening"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex items-center gap-3 px-5 py-3 rounded-full bg-primary/10 backdrop-blur-xl border border-primary/20 mb-6"
+              >
+                <div className="size-2.5 rounded-full bg-primary animate-pulse" />
+                <span className="text-sm font-medium text-primary">Ouvindo...</span>
+              </motion.div>
+            ) : (
+              <motion.div
+                key="idle"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="flex flex-col items-center gap-3 mb-6"
+              >
+                <span className="text-sm text-muted-foreground">Clique no orbe para falar</span>
+                <div className="hidden sm:flex items-center gap-2 text-xs text-muted-foreground/60">
+                  <kbd className="px-2 py-1 rounded-md bg-muted/50 border border-border font-mono text-[10px]">Espaço</kbd>
+                  <span>Segure para ativar</span>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-            {/* Status */}
-            <AnimatePresence mode="wait">
-              {isProcessing ? (
-                <motion.div
-                  key="processing"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-white/5 backdrop-blur-xl border border-white/10"
-                >
-                  <Loader2 className="size-4 animate-spin text-blue-400" />
-                  <span className="text-sm font-medium text-white/90">Processing your request</span>
-                </motion.div>
-              ) : isListening ? (
-                <motion.div
-                  key="listening"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex items-center gap-3 px-6 py-3 rounded-full bg-blue-500/10 backdrop-blur-xl border border-blue-500/20"
-                >
-                  <div className="size-2 rounded-full bg-blue-400 animate-pulse" />
-                  <span className="text-sm font-medium text-blue-300">Listening...</span>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="idle"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  className="flex flex-col items-center gap-2"
-                >
-                  <span className="text-sm text-white/40 font-light">Click to speak</span>
-                  <div className="flex items-center gap-2 text-xs text-white/30">
-                    <kbd className="px-2 py-1 rounded bg-white/5 border border-white/10 font-mono">Space</kbd>
-                    <span>Hold to activate</span>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
+          {/* Toggle input manual */}
+          <button
+            onClick={() => setShowManualInput(!showManualInput)}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-2 group mb-6"
+          >
+            <Keyboard className="size-4" />
+            <span>Digitar comando</span>
+            <ArrowRight className="size-3 group-hover:translate-x-0.5 transition-transform" />
+          </button>
 
-            {/* Alternative Input Toggle */}
-            <button
-              onClick={() => setShowManualInput(!showManualInput)}
-              className="text-sm text-white/40 hover:text-white/60 transition-colors flex items-center gap-2 group"
-            >
-              <Keyboard className="size-4" />
-              <span>Type instead</span>
-              <ArrowRight className="size-3 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </div>
-
-          {/* Manual Input */}
+          {/* Input manual */}
           <AnimatePresence>
             {showManualInput && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
+                className="w-full mb-6"
               >
                 <form onSubmit={handleManualSubmit} className="relative">
                   <Input
                     value={manualInput}
                     onChange={(e) => setManualInput(e.target.value)}
-                    placeholder="Type your command here..."
+                    placeholder="Digite seu comando aqui..."
                     disabled={isProcessing}
-                    className="w-full h-14 pl-6 pr-14 bg-white/5 backdrop-blur-xl border-white/10 rounded-2xl text-white placeholder:text-white/30 focus:border-white/20 focus:ring-2 focus:ring-white/10"
+                    className="w-full h-12 sm:h-14 pl-5 pr-14 bg-white/5 backdrop-blur-xl border-white/10 rounded-2xl text-foreground placeholder:text-muted-foreground focus:border-primary/30 focus:ring-2 focus:ring-primary/20"
                   />
                   <Button 
                     type="submit" 
                     size="icon"
                     disabled={isProcessing || !manualInput.trim()}
-                    className="absolute right-2 top-2 size-10 rounded-xl bg-blue-500 hover:bg-blue-600 text-white"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 size-9 sm:size-10 rounded-xl bg-primary hover:bg-primary/90"
                   >
-                    {isProcessing ? (
-                      <Loader2 className="size-4 animate-spin" />
-                    ) : (
-                      <Send className="size-4" />
-                    )}
+                    {isProcessing ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
                   </Button>
                 </form>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Transcript */}
+          {/* Transcrição - Balão minimalista */}
           <AnimatePresence>
             {transcript && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="w-full mb-6"
               >
-                <div className="p-6 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10">
-                  <div className="flex items-start gap-4">
-                    <div className="size-10 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
-                      <Mic className="size-5 text-blue-400" />
+                <div className="p-4 sm:p-5 rounded-2xl bg-white/[0.03] backdrop-blur-xl border border-white/5">
+                  <div className="flex items-start gap-3">
+                    <div className="size-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Mic className="size-4 text-primary" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-white/40 mb-2 uppercase tracking-wider">
-                        You said
+                      <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-widest mb-1">
+                        Você disse
                       </p>
-                      <p className="text-lg text-white/90 leading-relaxed">
-                        {transcript}
+                      <p className="text-sm sm:text-base text-foreground/80 leading-relaxed break-words">
+                        "{transcript}"
                       </p>
                     </div>
-                    {isProcessing && (
-                      <Loader2 className="size-5 animate-spin text-blue-400 shrink-0" />
-                    )}
+                    {isProcessing && <Loader2 className="size-4 animate-spin text-primary shrink-0" />}
                   </div>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Feedback Cards */}
-          <AnimatePresence mode="popLayout">
-            {feedbackList.map((feedback, index) => (
-              <motion.div
-                key={feedback.id}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                transition={{ 
-                  type: 'spring', 
-                  stiffness: 300, 
-                  damping: 30,
-                  delay: index * 0.1 
-                }}
-              >
-                <div className={`
-                  relative overflow-hidden rounded-2xl
-                  ${feedback.type === 'success' 
-                    ? 'bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 border-emerald-500/20' 
-                    : 'bg-gradient-to-br from-red-500/10 to-red-500/5 border-red-500/20'
-                  }
-                  border backdrop-blur-xl
-                `}>
-                  <div className="p-6">
-                    <div className="flex items-start gap-4">
-                      {/* Icon */}
-                      <div className={`
-                        size-12 rounded-xl flex items-center justify-center shrink-0
-                        ${feedback.type === 'success' 
-                          ? 'bg-emerald-500/10' 
-                          : 'bg-red-500/10'
-                        }
-                      `}>
-                        {feedback.type === 'success' ? (
-                          <Check className="size-6 text-emerald-400" strokeWidth={2.5} />
-                        ) : (
-                          <X className="size-6 text-red-400" strokeWidth={2.5} />
-                        )}
-                      </div>
+          {/* Cards de feedback com layout animado */}
+          <LayoutGroup>
+            <div className="w-full space-y-4">
+              <AnimatePresence mode="popLayout">
+                {feedbackList.map((feedback, index) => (
+                  feedback.type === 'success' 
+                    ? renderActionCard(feedback, index)
+                    : renderErrorCard(feedback)
+                ))}
+              </AnimatePresence>
+            </div>
+          </LayoutGroup>
 
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 space-y-3">
-                        <div>
-                          <p className={`text-xs font-semibold mb-1.5 uppercase tracking-wider ${
-                            feedback.type === 'success' ? 'text-emerald-400' : 'text-red-400'
-                          }`}>
-                            {feedback.type === 'success' ? 'Success' : 'Error'}
-                          </p>
-                          <p className="text-base font-medium text-white/90">
-                            {feedback.message}
-                          </p>
-                        </div>
-
-                        {/* Action button */}
-                        {feedback.type === 'success' && feedback.action && (
-                          <motion.button
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            onClick={() => setLocation(getRedirectPath(feedback.action!))}
-                            className="
-                              group inline-flex items-center gap-2 px-4 py-2.5 rounded-xl
-                              bg-white/5 hover:bg-white/10
-                              border border-white/10 hover:border-white/20
-                              text-sm font-medium text-white/70 hover:text-white/90
-                              transition-all duration-200
-                            "
-                          >
-                            <span>View details</span>
-                            <ArrowRight className="size-4 group-hover:translate-x-0.5 transition-transform" />
-                          </motion.button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-
-          {/* Examples */}
+          {/* Exemplos */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="space-y-4 pt-8"
+            transition={{ delay: 0.4 }}
+            className="space-y-4 pt-10 w-full"
           >
-            <p className="text-xs font-medium text-center text-white/30 uppercase tracking-wider">
-              Try saying
+            <p className="text-[10px] font-semibold text-center text-muted-foreground/50 uppercase tracking-widest">
+              Experimente dizer
             </p>
             <div className="flex flex-wrap gap-2 justify-center">
               {[
-                "I spent $30 on lunch",
-                "Mark running as done",
-                "Meeting tomorrow at 3pm",
-                "Add $20 coffee expense"
+                "Gastei 30 reais no almoço",
+                "Marcar corrida como feito",
+                "Reunião amanhã às 15h",
+                "Adicionar despesa de 50 reais"
               ].map((example, i) => (
                 <button
                   key={i}
-                  onClick={() => {
-                    setManualInput(example);
-                    setShowManualInput(true);
-                  }}
-                  className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs text-white/50 hover:text-white/70 transition-all"
+                  onClick={() => { setManualInput(example); setShowManualInput(true); }}
+                  className="px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-xs text-muted-foreground hover:text-foreground transition-all"
                 >
                   "{example}"
                 </button>

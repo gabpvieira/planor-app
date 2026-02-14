@@ -37,11 +37,11 @@ export default function NotesPage() {
     });
   };
 
-  if (isLoading) return <div className="p-8">Carregando notas...</div>;
+  if (isLoading) return <div>Carregando notas...</div>;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Notas</h1>
           <p className="text-muted-foreground">Capture pensamentos e ideias instantaneamente.</p>
