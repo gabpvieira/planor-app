@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { useUserSettings, ALL_TIMEZONES, BRAZILIAN_TIMEZONES, INTERNATIONAL_TIMEZONES, NotificationPrefs } from '@/hooks/use-user-settings';
+import { usePushNotifications } from '@/hooks/use-push-notifications';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -27,6 +28,11 @@ import {
   Sun,
   Clock,
   Save,
+  BellRing,
+  BellOff,
+  Smartphone,
+  Send,
+  Info,
 } from 'lucide-react';
 
 type SettingsSection = 'profile' | 'regional' | 'notifications' | 'system';
@@ -41,6 +47,7 @@ const SECTIONS = [
 export default function SettingsPage() {
   const { user, signOut } = useSupabaseAuth();
   const { settings, isLoading, isSaving, updateDisplayName, updateTimezone, updateNotificationPrefs, savePushSubscription } = useUserSettings();
+  const pushNotifications = usePushNotifications();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
   
@@ -57,7 +64,6 @@ export default function SettingsPage() {
   });
   
   const [timezoneSearch, setTimezoneSearch] = useState('');
-  const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
   const [hasChanges, setHasChanges] = useState(false);
 
   // Initialize local state from settings
@@ -77,13 +83,6 @@ export default function SettingsPage() {
     
     setHasChanges(displayNameChanged || timezoneChanged || notificationPrefsChanged);
   }, [localDisplayName, localTimezone, localNotificationPrefs, settings, user]);
-
-  // Check push notification permission
-  useEffect(() => {
-    if ('Notification' in window) {
-      setPushPermission(Notification.permission);
-    }
-  }, []);
 
   // Filter timezones based on search
   const filteredTimezones = timezoneSearch
@@ -125,36 +124,6 @@ export default function SettingsPage() {
       });
     }
   };
-
-  // Request push notification permission
-  const requestPushPermission = useCallback(async () => {
-    if (!('Notification' in window)) {
-      alert('Este navegador não suporta notificações push.');
-      return;
-    }
-
-    try {
-      const permission = await Notification.requestPermission();
-      setPushPermission(permission);
-
-      if (permission === 'granted') {
-        if ('serviceWorker' in navigator) {
-          const registration = await navigator.serviceWorker.ready;
-          
-          const subscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlBase64ToUint8Array(
-              'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-SkvMeAtA3LFgDzkrxZJjSgSnfckjBJuBkr3qBUYIHBQFLXYp5Nksh8U'
-            ) as BufferSource,
-          });
-
-          await savePushSubscription(subscription);
-        }
-      }
-    } catch (error) {
-      console.error('Error requesting push permission:', error);
-    }
-  }, [savePushSubscription]);
 
   if (isLoading) {
     return (
@@ -348,35 +317,112 @@ export default function SettingsPage() {
 
             {activeSection === 'notifications' && (
               <SettingsCard key="notifications" title="Notificações" description="Controle quais alertas você deseja receber">
-                {/* Push Notification Setup */}
+                {/* Push Notification Setup - Enhanced */}
                 <div className="mb-6 p-4 rounded-xl bg-primary/5 border border-primary/20">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                      <Bell className="w-5 h-5 text-primary" />
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center shrink-0",
+                      pushNotifications.isSubscribed ? "bg-green-500/10" : "bg-primary/10"
+                    )}>
+                      {pushNotifications.isSubscribed ? (
+                        <BellRing className="w-5 h-5 text-green-500" />
+                      ) : (
+                        <Bell className="w-5 h-5 text-primary" />
+                      )}
                     </div>
                     <div className="flex-1">
-                      <h4 className="font-medium text-foreground">Notificações Push</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-medium text-foreground">Notificações Push</h4>
+                        <span className={cn(
+                          "text-xs font-medium px-2 py-0.5 rounded-full",
+                          pushNotifications.permission === 'granted' 
+                            ? pushNotifications.isSubscribed 
+                              ? "bg-green-500/10 text-green-500" 
+                              : "bg-yellow-500/10 text-yellow-500"
+                            : pushNotifications.permission === 'denied'
+                            ? "bg-red-500/10 text-red-500"
+                            : "bg-muted text-muted-foreground"
+                        )}>
+                          {pushNotifications.getPermissionText()}
+                        </span>
+                      </div>
+                      
                       <p className="text-sm text-muted-foreground mt-1">
-                        {pushPermission === 'granted' 
-                          ? 'Notificações ativadas neste dispositivo'
-                          : pushPermission === 'denied'
-                          ? 'Notificações bloqueadas. Altere nas configurações do navegador.'
-                          : 'Receba alertas mesmo quando o Planor não estiver aberto'}
+                        {!pushNotifications.isSupported ? (
+                          'Seu navegador não suporta notificações push.'
+                        ) : !pushNotifications.isConfigured ? (
+                          'Notificações push não estão configuradas no servidor.'
+                        ) : pushNotifications.permission === 'granted' ? (
+                          pushNotifications.isSubscribed 
+                            ? 'Notificações ativadas neste dispositivo.'
+                            : 'Permissão concedida. Clique para ativar.'
+                        ) : pushNotifications.permission === 'denied' ? (
+                          'Notificações bloqueadas. Altere nas configurações do navegador.'
+                        ) : (
+                          'Receba alertas mesmo quando o Planor não estiver aberto.'
+                        )}
                       </p>
-                      {pushPermission !== 'granted' && pushPermission !== 'denied' && (
-                        <Button 
-                          onClick={requestPushPermission}
-                          variant="outline" 
-                          size="sm" 
-                          className="mt-3"
-                        >
-                          Ativar notificações
-                        </Button>
-                      )}
-                      {pushPermission === 'granted' && (
-                        <div className="flex items-center gap-2 mt-2 text-green-500 text-sm">
-                          <Check className="w-4 h-4" />
-                          <span>Ativo</span>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-wrap gap-2 mt-3">
+                        {pushNotifications.isSupported && pushNotifications.isConfigured && (
+                          <>
+                            {pushNotifications.permission !== 'denied' && (
+                              <Button 
+                                onClick={pushNotifications.toggle}
+                                variant={pushNotifications.isSubscribed ? "outline" : "default"}
+                                size="sm"
+                                disabled={pushNotifications.isLoading}
+                                className="gap-2"
+                              >
+                                {pushNotifications.isLoading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : pushNotifications.isSubscribed ? (
+                                  <BellOff className="w-4 h-4" />
+                                ) : (
+                                  <BellRing className="w-4 h-4" />
+                                )}
+                                {pushNotifications.isSubscribed ? 'Desativar' : 'Ativar notificações'}
+                              </Button>
+                            )}
+
+                            {pushNotifications.isSubscribed && (
+                              <Button 
+                                onClick={pushNotifications.sendTest}
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                              >
+                                <Send className="w-4 h-4" />
+                                Testar notificação
+                              </Button>
+                            )}
+                          </>
+                        )}
+
+                        {pushNotifications.permission === 'denied' && (
+                          <Button 
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={() => {
+                              toast({
+                                title: 'Como desbloquear',
+                                description: 'Clique no ícone de cadeado na barra de endereço e permita notificações.',
+                              });
+                            }}
+                          >
+                            <Info className="w-4 h-4" />
+                            Como desbloquear
+                          </Button>
+                        )}
+                      </div>
+
+                      {/* Device Info */}
+                      {pushNotifications.isSubscribed && (
+                        <div className="flex items-center gap-2 mt-3 text-xs text-muted-foreground">
+                          <Smartphone className="w-3 h-3" />
+                          <span>Inscrito neste dispositivo</span>
                         </div>
                       )}
                     </div>
@@ -604,20 +650,4 @@ function NotificationToggle({
       />
     </div>
   );
-}
-
-// Helper function for VAPID key conversion
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, '+')
-    .replace(/_/g, '/');
-
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
 }

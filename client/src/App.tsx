@@ -22,6 +22,7 @@ import FinancePage from "@/pages/FinancePage";
 import GoalsPage from "@/pages/GoalsPage";
 import CommandCenterPage from "@/pages/CommandCenterPage";
 import SettingsPage from "@/pages/SettingsPage";
+import NotificationSettingsPage from "@/pages/NotificationSettingsPage";
 import KnowledgePage from "@/pages/KnowledgePage";
 import NutritionPage from "@/pages/NutritionPage";
 import NotFound from "@/pages/not-found";
@@ -154,6 +155,10 @@ function App() {
 
             <Route path="/app/settings">
               <ProtectedPage><SettingsPage /></ProtectedPage>
+            </Route>
+
+            <Route path="/app/settings/notifications">
+              <ProtectedPage><NotificationSettingsPage /></ProtectedPage>
             </Route>
 
             <Route component={NotFound} />

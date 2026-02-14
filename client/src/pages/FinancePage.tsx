@@ -403,7 +403,7 @@ function CreditCardsSection({ creditCards, onCreateCard, onDeleteCard }: any) {
               <Plus className="size-4" /> Novo
             </button>
           </DialogTrigger>
-          <DialogContent className="finance-glass-elevated">
+          <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Novo Cartão de Crédito</DialogTitle>
             </DialogHeader>
@@ -653,7 +653,7 @@ function RecurringBillsSection({ bills, accounts, cards, onCreateBill, onDeleteB
               <Plus className="size-4" /> Nova
             </button>
           </DialogTrigger>
-          <DialogContent className="finance-glass-elevated">
+          <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Nova Despesa Recorrente</DialogTitle>
             </DialogHeader>
@@ -1469,7 +1469,7 @@ function CategoriesSection({ customCategories, allCategories, onCreateCategory, 
               <Plus className="size-4" /> Nova
             </button>
           </DialogTrigger>
-          <DialogContent className="finance-glass-elevated">
+          <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-md">
             <DialogHeader>
               <DialogTitle>Nova Categoria</DialogTitle>
             </DialogHeader>
@@ -1607,7 +1607,7 @@ function TransferModal({ accounts, onTransfer, isOpen, setIsOpen }: any) {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="finance-glass-elevated">
+      <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ArrowRightLeft className="size-5 finance-icon-accent" />
