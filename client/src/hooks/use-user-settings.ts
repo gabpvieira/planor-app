@@ -17,6 +17,7 @@ export interface UserSettings {
   timezone: string;
   notificationPrefs: NotificationPrefs;
   pushSubscription: PushSubscription | null;
+  defaultAccountId: string | null;
 }
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
@@ -79,6 +80,7 @@ export function useUserSettings() {
     timezone: 'America/Sao_Paulo',
     notificationPrefs: DEFAULT_NOTIFICATION_PREFS,
     pushSubscription: null,
+    defaultAccountId: null,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -91,7 +93,7 @@ export function useUserSettings() {
       try {
         const { data, error } = await supabase
           .from('profiles')
-          .select('display_name, timezone, notification_prefs, push_subscription')
+          .select('display_name, timezone, notification_prefs, push_subscription, default_account_id')
           .eq('id', user.id)
           .single();
 
@@ -102,6 +104,7 @@ export function useUserSettings() {
           timezone: data?.timezone || 'America/Sao_Paulo',
           notificationPrefs: data?.notification_prefs || DEFAULT_NOTIFICATION_PREFS,
           pushSubscription: data?.push_subscription || null,
+          defaultAccountId: data?.default_account_id || null,
         });
       } catch (error) {
         console.error('Error loading settings:', error);
@@ -230,6 +233,38 @@ export function useUserSettings() {
     }
   }, [user?.id, toast]);
 
+  // Update default account
+  const updateDefaultAccount = useCallback(async (accountId: string | null) => {
+    if (!user?.id) return;
+
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ default_account_id: accountId, updated_at: new Date().toISOString() })
+        .eq('id', user.id);
+
+      if (error) throw error;
+
+      setSettings(prev => ({ ...prev, defaultAccountId: accountId }));
+      toast({
+        title: accountId ? 'Conta principal definida' : 'Conta principal removida',
+        description: accountId 
+          ? 'Esta conta será usada automaticamente no Command Center.'
+          : 'Nenhuma conta padrão configurada.',
+      });
+    } catch (error) {
+      console.error('Error updating default account:', error);
+      toast({
+        title: 'Erro ao salvar',
+        description: 'Não foi possível atualizar a conta principal.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [user?.id, toast]);
+
   return {
     settings,
     isLoading,
@@ -238,5 +273,6 @@ export function useUserSettings() {
     updateTimezone,
     updateNotificationPrefs,
     savePushSubscription,
+    updateDefaultAccount,
   };
 }

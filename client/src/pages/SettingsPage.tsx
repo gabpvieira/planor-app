@@ -1,14 +1,16 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { useUserSettings, ALL_TIMEZONES, BRAZILIAN_TIMEZONES, INTERNATIONAL_TIMEZONES, NotificationPrefs } from '@/hooks/use-user-settings';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { supabase } from '@/lib/supabase';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { FloatingHeader } from '@/components/FloatingHeader';
 import {
   User,
   Globe,
@@ -33,20 +35,32 @@ import {
   Smartphone,
   Send,
   Info,
+  Building2,
+  Star,
 } from 'lucide-react';
 
-type SettingsSection = 'profile' | 'regional' | 'notifications' | 'system';
+type SettingsSection = 'profile' | 'regional' | 'notifications' | 'finance' | 'system';
 
 const SECTIONS = [
   { id: 'profile' as const, label: 'Perfil', icon: User },
   { id: 'regional' as const, label: 'Regional', icon: Globe },
   { id: 'notifications' as const, label: 'Notificações', icon: Bell },
+  { id: 'finance' as const, label: 'Finanças', icon: Wallet },
   { id: 'system' as const, label: 'Sistema', icon: Settings },
 ];
 
+interface Account {
+  id: string;
+  name: string;
+  type: string;
+  balance: number;
+  bank_slug: string | null;
+  logo_url: string | null;
+}
+
 export default function SettingsPage() {
   const { user, signOut } = useSupabaseAuth();
-  const { settings, isLoading, isSaving, updateDisplayName, updateTimezone, updateNotificationPrefs, savePushSubscription } = useUserSettings();
+  const { settings, isLoading, isSaving, updateDisplayName, updateTimezone, updateNotificationPrefs, updateDefaultAccount } = useUserSettings();
   const pushNotifications = usePushNotifications();
   const { toast } = useToast();
   const [activeSection, setActiveSection] = useState<SettingsSection>('profile');
@@ -65,6 +79,32 @@ export default function SettingsPage() {
   
   const [timezoneSearch, setTimezoneSearch] = useState('');
   const [hasChanges, setHasChanges] = useState(false);
+  
+  // Accounts state
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [loadingAccounts, setLoadingAccounts] = useState(false);
+
+  // Load accounts
+  useEffect(() => {
+    async function loadAccounts() {
+      if (!user?.id) return;
+      setLoadingAccounts(true);
+      try {
+        const { data } = await supabase
+          .from('accounts')
+          .select('id, name, type, balance, bank_slug, logo_url')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true });
+        setAccounts(data || []);
+      } catch (error) {
+        console.error('Error loading accounts:', error);
+      } finally {
+        setLoadingAccounts(false);
+      }
+    }
+    loadAccounts();
+  }, [user?.id]);
 
   // Initialize local state from settings
   useEffect(() => {
@@ -135,27 +175,27 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Save Button */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Configurações</h1>
-          <p className="text-sm text-muted-foreground mt-1">Gerencie suas preferências e conta</p>
-        </div>
-        <Button 
-          onClick={handleSaveAll} 
-          disabled={!hasChanges || isSaving}
-          className="gap-2"
-        >
-          {isSaving ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Save className="w-4 h-4" />
-          )}
-          Salvar alterações
-        </Button>
-      </div>
+      <FloatingHeader 
+        title="Configurações"
+        subtitle="Gerencie suas preferências e conta"
+        actions={
+          <Button 
+            onClick={handleSaveAll} 
+            disabled={!hasChanges || isSaving}
+            className="gap-2"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">Salvar alterações</span>
+          </Button>
+        }
+      />
 
-      <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
+      <div className="px-4 sm:px-6">
+        <div className="flex flex-col lg:flex-row gap-6 lg:gap-8">
         {/* Sidebar Navigation */}
         <nav className="lg:w-56 shrink-0">
           <div className="glass-card rounded-2xl p-2 space-y-1">
@@ -490,6 +530,113 @@ export default function SettingsPage() {
               </SettingsCard>
             )}
 
+            {activeSection === 'finance' && (
+              <SettingsCard key="finance" title="Finanças" description="Configure sua conta principal para lançamentos rápidos">
+                <div className="space-y-6">
+                  {/* Default Account Section */}
+                  <div className="space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-4 h-4 text-muted-foreground" />
+                      <label className="text-sm font-medium text-foreground">Conta Principal</label>
+                    </div>
+                    
+                    <p className="text-sm text-muted-foreground">
+                      Esta conta será usada automaticamente ao registrar transações pelo Command Center (voz).
+                    </p>
+
+                    {loadingAccounts ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+                      </div>
+                    ) : accounts.length === 0 ? (
+                      <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <p className="text-sm text-amber-500">
+                          Você ainda não tem contas cadastradas. Adicione uma conta na página de Finanças.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {accounts.map((account) => {
+                          const isSelected = settings.defaultAccountId === account.id;
+                          return (
+                            <button
+                              key={account.id}
+                              onClick={() => updateDefaultAccount(isSelected ? null : account.id)}
+                              className={cn(
+                                "w-full flex items-center gap-4 p-4 rounded-xl transition-all duration-200",
+                                "border",
+                                isSelected 
+                                  ? "bg-primary/10 border-primary/30" 
+                                  : "bg-background/30 border-border/30 hover:bg-accent hover:border-border/50"
+                              )}
+                            >
+                              {/* Account Logo/Icon */}
+                              <div className="w-12 h-12 rounded-xl bg-background/50 flex items-center justify-center overflow-hidden shrink-0">
+                                {account.logo_url ? (
+                                  <img 
+                                    src={account.logo_url} 
+                                    alt={account.name}
+                                    className="w-8 h-8 object-contain"
+                                  />
+                                ) : (
+                                  <Building2 className="w-6 h-6 text-muted-foreground" />
+                                )}
+                              </div>
+
+                              {/* Account Info */}
+                              <div className="flex-1 text-left">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-foreground">{account.name}</span>
+                                  {isSelected && (
+                                    <span className="flex items-center gap-1 text-xs font-medium text-primary bg-primary/10 px-2 py-0.5 rounded-full">
+                                      <Star className="w-3 h-3" />
+                                      Principal
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground uppercase tracking-wider">
+                                  {account.type === 'corrente' ? 'Conta Corrente' : 
+                                   account.type === 'poupanca' ? 'Poupança' :
+                                   account.type === 'investimento' ? 'Investimento' : 'Carteira'}
+                                </span>
+                              </div>
+
+                              {/* Balance */}
+                              <div className="text-right">
+                                <span className={cn(
+                                  "font-mono font-medium",
+                                  Number(account.balance) >= 0 ? "text-emerald-500" : "text-red-500"
+                                )}>
+                                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(account.balance))}
+                                </span>
+                              </div>
+
+                              {/* Selection Indicator */}
+                              <div className={cn(
+                                "w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-all",
+                                isSelected 
+                                  ? "border-primary bg-primary" 
+                                  : "border-border/50"
+                              )}>
+                                {isSelected && <Check className="w-4 h-4 text-primary-foreground" />}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {settings.defaultAccountId && (
+                      <p className="text-xs text-muted-foreground flex items-center gap-2">
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        Transações do Command Center serão vinculadas automaticamente a esta conta.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </SettingsCard>
+            )}
+
             {activeSection === 'system' && (
               <SettingsCard key="system" title="Sistema" description="Configurações avançadas e informações do app">
                 <div className="space-y-6">
@@ -548,6 +695,7 @@ export default function SettingsPage() {
             )}
           </AnimatePresence>
         </div>
+      </div>
       </div>
     </div>
   );

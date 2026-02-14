@@ -8,6 +8,7 @@ import { Plus, Trash2, StickyNote, Pin, PinOff } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { FloatingHeader } from "@/components/FloatingHeader";
 
 export default function NotesPage() {
   const { notes, isLoading, createNote, deleteNote, togglePin, isCreating } = useSupabaseNotes();
@@ -41,46 +42,47 @@ export default function NotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Notas</h1>
-          <p className="text-muted-foreground">Capture pensamentos e ideias instantaneamente.</p>
-        </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-          <DialogTrigger asChild>
-            <Button className="shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
-              <Plus className="mr-2 size-4" /> Nova Nota
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Criar Nota</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
-              <Input 
-                placeholder="Título" 
-                value={newNoteTitle} 
-                onChange={e => setNewNoteTitle(e.target.value)} 
-                className="font-semibold text-lg border-none px-0 shadow-none focus-visible:ring-0 rounded-none border-b border-border/50 focus:border-primary transition-colors"
-                autoFocus
-              />
-              <Textarea 
-                placeholder="Escreva algo..." 
-                value={newNoteContent} 
-                onChange={e => setNewNoteContent(e.target.value)}
-                className="min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-none p-0"
-              />
-              <DialogFooter>
-                <Button type="submit" disabled={isCreating}>
-                  {isCreating ? "Salvando..." : "Salvar Nota"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <FloatingHeader 
+        title="Notas"
+        subtitle="Capture pensamentos e ideias instantaneamente"
+        actions={
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button className="shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all">
+                <Plus className="mr-2 size-4" /> <span className="hidden sm:inline">Nova Nota</span>
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Criar Nota</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+                <Input 
+                  placeholder="Título" 
+                  value={newNoteTitle} 
+                  onChange={e => setNewNoteTitle(e.target.value)} 
+                  className="font-semibold text-lg border-none px-0 shadow-none focus-visible:ring-0 rounded-none border-b border-border/50 focus:border-primary transition-colors"
+                  autoFocus
+                />
+                <Textarea 
+                  placeholder="Escreva algo..." 
+                  value={newNoteContent} 
+                  onChange={e => setNewNoteContent(e.target.value)}
+                  className="min-h-[200px] border-none shadow-none focus-visible:ring-0 resize-none p-0"
+                />
+                <DialogFooter>
+                  <Button type="submit" disabled={isCreating}>
+                    {isCreating ? "Salvando..." : "Salvar Nota"}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="px-4 sm:px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {notes?.length === 0 && (
            <div className="col-span-full text-center py-20 text-muted-foreground border-2 border-dashed border-muted rounded-xl">
              <StickyNote className="size-12 mx-auto mb-4 opacity-20" />
@@ -132,6 +134,7 @@ export default function NotesPage() {
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

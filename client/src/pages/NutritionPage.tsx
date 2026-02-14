@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNutritionProfile, useDailyNutrition, useWeeklyNutrition, useMealPlans } from "@/hooks/use-supabase-nutrition";
+import { FloatingHeader } from "@/components/FloatingHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -993,17 +994,10 @@ export default function NutritionPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Apple className="size-6 text-emerald-400" />
-            Nutrição
-          </h1>
-          <p className="text-sm text-muted-foreground">Controle sua alimentação com IA</p>
-        </div>
-
-        <div className="flex items-center gap-2">
+      <FloatingHeader 
+        title="Nutrição"
+        subtitle="Controle sua alimentação com IA"
+        actions={
           <Button
             variant="outline"
             size="sm"
@@ -1011,13 +1005,14 @@ export default function NutritionPage() {
             onClick={() => setIsProfileOpen(true)}
           >
             <Target className="size-4 mr-2" />
-            Metas
+            <span className="hidden sm:inline">Metas</span>
           </Button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Dashboard Section - Fixed on mobile */}
-      <div className={cn(
+      <div className="px-4 sm:px-6">
+        {/* Dashboard Section - Fixed on mobile */}
+        <div className={cn(
         "p-4 md:p-6 rounded-2xl",
         "bg-white/5 border border-white/10",
         "backdrop-blur-md",
@@ -1218,6 +1213,7 @@ export default function NutritionPage() {
         isOpen={!!selectedPlan}
         onClose={() => setSelectedPlan(null)}
       />
+      </div>
     </div>
   );
 }

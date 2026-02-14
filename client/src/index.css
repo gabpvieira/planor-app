@@ -973,13 +973,13 @@ kbd {
   box-shadow: 
     0 2px 8px rgba(0, 0, 0, 0.04),
     0 8px 32px rgba(0, 0, 0, 0.08);
-  max-width: 100%;
   box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .finance-glass-elevated {
     border-radius: 16px;
+    max-width: 95vw;
   }
 }
 

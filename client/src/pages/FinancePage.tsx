@@ -25,7 +25,7 @@ import { BankSelect, type BrazilianBank } from '@/components/ui/bank-select';
 import { getBankBySlug } from '@/data/brazilian-banks';
 import { getBrasiliaDateString } from '@shared/utils/timezone';
 import StatementImport from '@/components/finance/StatementImport';
-import { PageHeader } from '@/components/PageHeader';
+import { FloatingHeader } from '@/components/FloatingHeader';
 
 // Currency formatter
 const formatCurrency = (value: number) => {
@@ -571,7 +571,7 @@ function CardTransactionsSection({
                     <div>
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-[0.9375rem]">
-                          {transaction.description || category?.label || transaction.category}
+                          {(transaction.description || category?.label || transaction.category)?.replace(/✨/g, '').trim()}
                         </p>
                         {isInstallment && (
                           <span className="finance-badge finance-badge-neutral">
@@ -909,7 +909,7 @@ function TransactionsSection({
               <Plus className="size-3 sm:size-4" /> Nova
             </button>
           </DialogTrigger>
-          <DialogContent className="finance-glass-elevated max-w-lg">
+          <DialogContent className="finance-glass-elevated max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingTransaction ? 'Editar Transação' : 'Nova Transação'}</DialogTitle>
             </DialogHeader>
@@ -1154,7 +1154,7 @@ function TransactionsSection({
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-medium text-xs sm:text-[0.9375rem] truncate">
-                          {transaction.description || category?.label || transaction.category}
+                          {(transaction.description || category?.label || transaction.category)?.replace(/✨/g, '').trim()}
                         </p>
                         {isInstallment && (
                           <span className="finance-badge finance-badge-neutral">
@@ -1167,8 +1167,8 @@ function TransactionsSection({
                           </span>
                         )}
                         {transaction.description?.includes('✨') && (
-                          <span className="finance-badge finance-badge-neutral text-primary">
-                            <Sparkles className="size-3 mr-0.5" /> IA
+                          <span className="text-[10px] font-medium text-muted-foreground/60 bg-muted/30 px-1.5 py-0.5 rounded">
+                            auto
                           </span>
                         )}
                       </div>
@@ -1698,36 +1698,35 @@ export default function FinancePage() {
     <div className="finance-page overflow-x-hidden">
       <div className="space-y-4 sm:space-y-6">
         {/* Header - Clean & Minimal */}
-        <div className="w-full">
-          <PageHeader
-            title="Finanças"
-            description="Central de controle patrimonial"
-            actions={
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowValues(!showValues)}
-                  className="finance-btn finance-btn-secondary p-2"
-                  title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
-                >
-                  {showValues ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
-                </button>
-                <button 
-                  onClick={() => setIsTransferOpen(true)}
-                  className="finance-btn finance-btn-secondary flex items-center gap-2 px-2 sm:px-3"
-                >
-                  <ArrowRightLeft className="size-4" />
-                  <span className="hidden sm:inline">Transferir</span>
-                </button>
-              </div>
-            }
-          />
-        </div>
+        <FloatingHeader
+          title="Finanças"
+          subtitle="Central de controle patrimonial"
+          actions={
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowValues(!showValues)}
+                className="finance-btn finance-btn-secondary p-2"
+                title={showValues ? 'Ocultar valores' : 'Mostrar valores'}
+              >
+                {showValues ? <Eye className="size-4" /> : <EyeOff className="size-4" />}
+              </button>
+              <button 
+                onClick={() => setIsTransferOpen(true)}
+                className="finance-btn finance-btn-secondary flex items-center gap-2 px-2 sm:px-3"
+              >
+                <ArrowRightLeft className="size-4" />
+                <span className="hidden sm:inline">Transferir</span>
+              </button>
+            </div>
+          }
+        />
 
-        {/* Summary Cards */}
-        <SummaryCards summary={summary} showValues={showValues} />
+        <div className="px-4 sm:px-6">
+          {/* Summary Cards */}
+          <SummaryCards summary={summary} showValues={showValues} />
 
-        {/* Main Content Tabs - Linear Style */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+          {/* Main Content Tabs - Linear Style */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
           <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
             <TabsList className="finance-tabs w-full min-w-max sm:min-w-0 lg:w-auto lg:inline-flex">
               <TabsTrigger value="overview" className="finance-tab data-[state=active]:finance-tab-active gap-2 flex-1 sm:flex-initial">
@@ -1940,15 +1939,16 @@ export default function FinancePage() {
               </div>
             </div>
           </TabsContent>
-        </Tabs>
+          </Tabs>
 
-        {/* Transfer Modal */}
-        <TransferModal
-          accounts={accounts}
-          onTransfer={createTransfer}
-          isOpen={isTransferOpen}
-          setIsOpen={setIsTransferOpen}
-        />
+          {/* Transfer Modal */}
+          <TransferModal
+            accounts={accounts}
+            onTransfer={createTransfer}
+            isOpen={isTransferOpen}
+            setIsOpen={setIsTransferOpen}
+          />
+        </div>
       </div>
     </div>
   );

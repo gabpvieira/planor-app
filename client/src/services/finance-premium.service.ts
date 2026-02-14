@@ -429,9 +429,74 @@ export const transactionsService = {
   },
 
   async update(id: number, transaction: TransactionUpdate): Promise<FinanceTransaction> {
+    // Buscar transação atual para comparar mudanças
+    const { data: oldTransaction } = await supabase
+      .from('finance_transactions')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (!oldTransaction) throw new Error('Transação não encontrada');
+
+    // Limpar campos que não pertencem à tabela (ex: 'installments' do formulário)
+    const cleanTransaction: any = {};
+    const validFields = [
+      'type', 'amount', 'category', 'description', 'date',
+      'account_id', 'card_id', 'installments_total', 'installment_current',
+      'parent_transaction_id', 'is_subscription', 'is_transfer',
+      'transfer_to_account_id', 'recurring_bill_id', 'paid', 'due_date'
+    ];
+    
+    for (const field of validFields) {
+      if (field in transaction) {
+        cleanTransaction[field] = (transaction as any)[field];
+      }
+    }
+
+    // Determinar valores antigos e novos
+    const oldAccountId = oldTransaction.account_id;
+    const newAccountId = cleanTransaction.account_id !== undefined ? cleanTransaction.account_id : oldAccountId;
+    const oldCardId = oldTransaction.card_id;
+    const newCardId = cleanTransaction.card_id !== undefined ? cleanTransaction.card_id : oldCardId;
+    const oldAmount = Number(oldTransaction.amount);
+    const newAmount = cleanTransaction.amount !== undefined ? Number(cleanTransaction.amount) : oldAmount;
+    const oldType = oldTransaction.type;
+    const newType = cleanTransaction.type !== undefined ? cleanTransaction.type : oldType;
+
+    // Não processar transferências
+    if (!oldTransaction.is_transfer) {
+      // 1. Reverter saldo da conta antiga (se tinha conta vinculada e não era cartão)
+      if (oldAccountId && !oldCardId) {
+        await accountsService.updateBalance(
+          oldAccountId,
+          oldAmount,
+          oldType === 'income' ? 'subtract' : 'add'
+        );
+      }
+
+      // 2. Reverter saldo do cartão antigo (se tinha cartão vinculado)
+      if (oldCardId) {
+        await creditCardsService.updateBalance(oldCardId, oldAmount, 'subtract');
+      }
+
+      // 3. Aplicar saldo na nova conta (se tem conta vinculada e não é cartão)
+      if (newAccountId && !newCardId) {
+        await accountsService.updateBalance(
+          newAccountId,
+          newAmount,
+          newType === 'income' ? 'add' : 'subtract'
+        );
+      }
+
+      // 4. Aplicar saldo no novo cartão (se tem cartão vinculado)
+      if (newCardId) {
+        await creditCardsService.updateBalance(newCardId, newAmount, 'add');
+      }
+    }
+    
     const { data, error } = await supabase
       .from('finance_transactions')
-      .update({ ...transaction, updated_at: toBrasiliaISOString() })
+      .update({ ...cleanTransaction, updated_at: toBrasiliaISOString() })
       .eq('id', id)
       .select()
       .single();

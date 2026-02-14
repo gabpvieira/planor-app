@@ -18,10 +18,10 @@ export default function ListeningOrb({
   };
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center overflow-visible">
       {/* Container com efeito gooey/metaball */}
       <div 
-        className={`${sizeClasses[size]} relative`}
+        className={`${sizeClasses[size]} relative overflow-visible`}
         style={{
           filter: isListening ? 'blur(1px) contrast(150%)' : 'blur(0.5px) contrast(120%)'
         }}

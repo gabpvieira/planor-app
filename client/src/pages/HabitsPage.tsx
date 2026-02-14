@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { getBrasiliaDateString } from '@shared/utils/timezone';
+import { FloatingHeader } from '@/components/FloatingHeader';
 
 // Mapeamento de ícones
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -1020,33 +1021,33 @@ export default function HabitsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Hábitos</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">
-            Construa consistência, um dia de cada vez
-          </p>
-        </div>
-        <Button onClick={() => setIsCreateOpen(true)} size="sm">
-          <Plus className="size-4 mr-1.5" />
-          Novo Hábito
-        </Button>
-      </div>
-
-      {/* Barra de Progresso com Planta */}
-      <PlantProgressBar 
-        completedToday={completedToday}
-        totalHabits={totalHabits}
-        totalCompletions={userStats?.totalCompletions || 0}
+      <FloatingHeader 
+        title="Hábitos"
+        subtitle="Construa consistência, um dia de cada vez"
+        actions={
+          <Button onClick={() => setIsCreateOpen(true)} size="sm">
+            <Plus className="size-4 mr-1.5" />
+            <span className="hidden sm:inline">Novo Hábito</span>
+            <span className="sm:hidden">Novo</span>
+          </Button>
+        }
       />
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-        <TabsList>
-          <TabsTrigger value="habits" className="gap-1.5">
-            <Target className="w-4 h-4" />
-            Hábitos
-          </TabsTrigger>
+      <div className="px-4 sm:px-6">
+        {/* Barra de Progresso com Planta */}
+        <PlantProgressBar 
+          completedToday={completedToday}
+          totalHabits={totalHabits}
+          totalCompletions={userStats?.totalCompletions || 0}
+        />
+
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="habits" className="gap-1.5">
+              <Target className="w-4 h-4" />
+              Hábitos
+            </TabsTrigger>
           <TabsTrigger value="history" className="gap-1.5">
             <History className="w-4 h-4" />
             Histórico
@@ -1140,6 +1141,7 @@ export default function HabitsPage() {
         onSubmit={handleCreate}
         isCreating={isCreating}
       />
+      </div>
     </div>
   );
 }

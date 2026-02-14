@@ -146,18 +146,28 @@ export function AppSidebar() {
     };
   }, [isMobileMenuOpen]);
 
-  // Check if we're on mobile
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+  // Check if we're on mobile - reactive
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   return (
     <TooltipProvider delayDuration={400}>
-      {/* Mobile Menu Button */}
+      {/* Mobile Menu Button - Hidden when menu is open */}
       <button
         onClick={toggleMobileMenu}
-        className="md:hidden fixed top-4 left-4 z-[60] p-2.5 rounded-xl bg-background/80 backdrop-blur-xl border border-border shadow-lg hover:bg-accent transition-all duration-300"
+        className={cn(
+          "md:hidden fixed top-[38px] left-4 z-[60] p-2 rounded-xl bg-background/80 backdrop-blur-xl border border-border shadow-lg hover:bg-accent transition-all duration-300",
+          isMobileMenuOpen && "opacity-0 pointer-events-none"
+        )}
         aria-label="Toggle menu"
       >
-        {isMobileMenuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+        <Menu className="size-5" />
       </button>
 
       {/* Mobile Overlay */}
@@ -175,35 +185,55 @@ export function AppSidebar() {
       </AnimatePresence>
 
       {/* Sidebar */}
-      <aside
+      <motion.aside
+        initial={false}
+        animate={{
+          x: isMobile ? (isMobileMenuOpen ? 0 : -320) : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 400,
+          damping: 35,
+        }}
         className={cn(
           // Base styles - macOS Sonoma style
-          "fixed top-0 left-0 h-full flex flex-col",
+          "fixed flex flex-col",
           // Translucent background with blur - theme aware
-          "bg-background/70 backdrop-blur-2xl",
-          // Remove hard borders
-          "border-r border-border/50",
+          "bg-background/90 backdrop-blur-2xl",
+          // Mobile: flutuante com bordas redondas
+          "md:top-0 md:left-0 md:h-full md:rounded-none",
+          "top-3 left-3 bottom-3 rounded-2xl",
+          // Border
+          "border border-border/30 md:border-r md:border-y-0 md:border-l-0",
           // Desktop styles
           "md:z-auto",
           isCollapsed ? "md:w-[72px]" : "md:w-[260px]",
           // Mobile styles
           "w-[280px] z-[50]",
-          "transition-all duration-300 ease-out",
-          // Mobile visibility
-          isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-          // Subtle shadow
-          "shadow-xl"
+          // Desktop transition only
+          "md:transition-all md:duration-300 md:ease-out",
+          // Shadow
+          "shadow-2xl shadow-black/20"
         )}
         data-collapsed={isCollapsed}
       >
-        {/* Header - Logo only */}
+        {/* Header - Logo and close button */}
         <div className={cn(
           "flex items-center px-4 py-3",
           isCollapsed && "md:justify-center md:px-3 md:py-2"
         )}>
-          {/* Mobile: always show logo */}
-          <div className="md:hidden drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
-            <PlanorLogo size={100} />
+          {/* Mobile: Close button + Logo side by side */}
+          <div className="md:hidden flex items-center gap-3">
+            <button
+              onClick={toggleMobileMenu}
+              className="p-2 rounded-xl bg-background/50 border border-border/50 hover:bg-accent transition-all duration-200"
+              aria-label="Fechar menu"
+            >
+              <X className="size-5" />
+            </button>
+            <div className="drop-shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+              <PlanorLogo size={90} />
+            </div>
           </div>
           {/* Desktop: conditional logo */}
           <div className="hidden md:block">
@@ -477,7 +507,7 @@ export function AppSidebar() {
             )}
           </div>
         </div>
-      </aside>
+      </motion.aside>
     </TooltipProvider>
   );
 }

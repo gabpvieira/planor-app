@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
+import { useUserSettings } from '@/hooks/use-user-settings';
 import ListeningOrb from '@/components/voice/ListeningOrb';
 import { useLocation } from 'wouter';
 
@@ -89,6 +90,7 @@ const formatCurrency = (value: number) =>
 
 export default function CommandCenterPage() {
   const { user } = useSupabaseAuth();
+  const { settings } = useUserSettings();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   
@@ -100,6 +102,7 @@ export default function CommandCenterPage() {
   const [showManualInput, setShowManualInput] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [defaultAccountId, setDefaultAccountId] = useState<string | null>(null);
   
   const finalTranscriptRef = useRef<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -108,6 +111,34 @@ export default function CommandCenterPage() {
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  // Carregar conta padrão ou primeira conta disponível
+  useEffect(() => {
+    async function loadDefaultAccount() {
+      if (!user?.id) return;
+      
+      // Se tem conta padrão nas configurações, usar ela
+      if (settings.defaultAccountId) {
+        setDefaultAccountId(settings.defaultAccountId);
+        return;
+      }
+      
+      // Senão, buscar a primeira conta ativa
+      const { data: accounts } = await supabase
+        .from('accounts')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      
+      if (accounts && accounts.length > 0) {
+        setDefaultAccountId(accounts[0].id);
+      }
+    }
+    
+    loadDefaultAccount();
+  }, [user?.id, settings.defaultAccountId]);
 
   // Atalho de teclado: Espaço (segurar)
   useEffect(() => {
@@ -290,7 +321,28 @@ export default function CommandCenterPage() {
           user_id: user.id, type: action.type, amount: action.amount,
           category: action.category || 'outros', description: action.description,
           date: action.date || new Date().toISOString(), paid: true,
+          account_id: defaultAccountId, // Vincula à conta padrão automaticamente
         });
+        
+        // Atualizar saldo da conta se houver conta vinculada
+        if (defaultAccountId) {
+          const { data: account } = await supabase
+            .from('accounts')
+            .select('balance')
+            .eq('id', defaultAccountId)
+            .single();
+          
+          if (account) {
+            const newBalance = action.type === 'income'
+              ? Number(account.balance) + Number(action.amount)
+              : Number(account.balance) - Number(action.amount);
+            
+            await supabase
+              .from('accounts')
+              .update({ balance: newBalance, updated_at: new Date().toISOString() })
+              .eq('id', defaultAccountId);
+          }
+        }
         break;
       case 'habit':
         if (action.operation === 'create') {
@@ -469,7 +521,7 @@ export default function CommandCenterPage() {
   );
 
   return (
-    <div className="min-h-screen bg-background relative overflow-hidden w-full max-w-full">
+    <div className="min-h-screen bg-background relative w-full max-w-full overflow-x-hidden">
       {/* Background consistente com outras páginas */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-violet-500/5 to-background" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary/10 via-transparent to-transparent" />
@@ -477,15 +529,15 @@ export default function CommandCenterPage() {
       {/* Backdrop blur overlay */}
       <div className="absolute inset-0 backdrop-blur-3xl bg-background/30" />
 
-      <div className="relative z-10 flex flex-col min-h-screen px-4 py-6 sm:p-8 pt-20 md:pt-8">
-        <div className="w-full max-w-2xl mx-auto flex flex-col items-center">
+      <div className="relative z-10 flex flex-col min-h-screen px-4 py-6 sm:p-8 pt-20 md:pt-8 overflow-visible">
+        <div className="w-full max-w-2xl mx-auto flex flex-col items-center overflow-visible">
           
-          {/* Orbe no topo */}
+          {/* Orbe no topo - Container com padding para evitar recorte */}
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            className="cursor-pointer mb-6"
+            className="cursor-pointer mb-6 p-12 sm:p-16"
             onClick={isListening ? stopListening : startListening}
           >
             <ListeningOrb 

@@ -9,6 +9,7 @@ import { motion } from 'framer-motion';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { useUserSettings, NotificationPrefs } from '@/hooks/use-user-settings';
 import { usePushNotifications } from '@/hooks/use-push-notifications';
+import { FloatingHeader } from '@/components/FloatingHeader';
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -81,19 +82,21 @@ export default function NotificationSettingsPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link href="/app/settings">
-          <Button variant="ghost" size="icon" className="shrink-0">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Notificações</h1>
-          <p className="text-sm text-muted-foreground">Configure como você recebe alertas</p>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <FloatingHeader 
+        title="Notificações"
+        subtitle="Configure como você recebe alertas"
+        actions={
+          <Link href="/app/settings">
+            <Button variant="ghost" size="sm" className="gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Voltar</span>
+            </Button>
+          </Link>
+        }
+      />
+
+      <div className="px-4 sm:px-6 max-w-2xl mx-auto">
 
       {/* Push Notification Status Card */}
       <motion.div
@@ -339,6 +342,7 @@ export default function NotificationSettingsPage() {
           </Button>
         </motion.div>
       )}
+      </div>
     </div>
   );
 }

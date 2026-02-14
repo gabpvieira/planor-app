@@ -20,6 +20,7 @@ import { format, isToday, isTomorrow, isPast, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { FloatingHeader } from "@/components/FloatingHeader";
 import type { Subtask } from "@/types/database.types";
 
 type Priority = 'P1' | 'P2' | 'P3' | 'P4';
@@ -1076,61 +1077,40 @@ export default function TasksPage() {
   return (
     <div className="h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 border-b border-border/30 shrink-0">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          >
-            {isSidebarCollapsed ? <PanelLeft className="w-4 h-4" /> : <PanelLeftClose className="w-4 h-4" />}
-          </Button>
-          <h1 className="text-xl font-semibold tracking-tight">Tarefas</h1>
-          <div className="h-4 w-px bg-border/50" />
-          <span className="text-sm text-muted-foreground">
-            {filterCounts.all} pendentes
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          {/* View Toggle */}
-          <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
-            <Button
-              variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+      <FloatingHeader 
+        title="Tarefas"
+        subtitle={`${filterCounts.all} pendentes`}
+        actions={
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-1">
+              <Button
+                variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+                className="h-7 px-2"
+              >
+                <LayoutList className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('kanban')}
+                className="h-7 px-2"
+              >
+                <Kanban className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button 
+              onClick={() => setIsCreateModalOpen(true)}
               size="sm"
-              onClick={() => setViewMode('list')}
-              className="h-7 px-2"
+              className="gap-2 shadow-lg shadow-primary/20"
             >
-              <LayoutList className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'kanban' ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('kanban')}
-              className="h-7 px-2"
-            >
-              <Kanban className="w-4 h-4" />
+              <Plus className="w-4 h-4" />
+              <span className="hidden sm:inline">Nova</span>
             </Button>
           </div>
-          
-          <div className="h-4 w-px bg-border/50 hidden sm:block" />
-          
-          {/* Shortcuts hint */}
-          <div className="hidden md:flex items-center gap-2 text-xs text-muted-foreground">
-            <kbd className="px-1.5 py-0.5 bg-muted/50 rounded text-[10px]">C</kbd>
-            <span>Criar</span>
-          </div>
-          
-          <Button 
-            onClick={() => setIsCreateModalOpen(true)}
-            size="sm"
-            className="gap-2 shadow-lg shadow-primary/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">Nova Tarefa</span>
-          </Button>
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden min-h-0">

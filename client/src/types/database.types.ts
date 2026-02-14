@@ -935,8 +935,103 @@ export interface Database {
           updated_at?: string
         }
       }
+      financial_challenges: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          description: string | null
+          icon: string
+          challenge_type: ChallengeType
+          direction: ChallengeDirection
+          start_amount: number
+          step_amount: number
+          total_weeks: number
+          current_week: number
+          total_deposited: number
+          deposit_history: ChallengeDeposit[]
+          custom_amounts: number[] | null
+          target_amount: number | null
+          linked_account_id: string | null
+          auto_create_transaction: boolean
+          status: ChallengeStatus
+          start_date: string
+          target_date: string | null
+          completed_at: string | null
+          notification_enabled: boolean
+          notification_day: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          description?: string | null
+          icon?: string
+          challenge_type?: ChallengeType
+          direction?: ChallengeDirection
+          start_amount?: number
+          step_amount?: number
+          total_weeks?: number
+          current_week?: number
+          total_deposited?: number
+          deposit_history?: ChallengeDeposit[]
+          custom_amounts?: number[] | null
+          target_amount?: number | null
+          linked_account_id?: string | null
+          auto_create_transaction?: boolean
+          status?: ChallengeStatus
+          start_date?: string
+          target_date?: string | null
+          completed_at?: string | null
+          notification_enabled?: boolean
+          notification_day?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          description?: string | null
+          icon?: string
+          challenge_type?: ChallengeType
+          direction?: ChallengeDirection
+          start_amount?: number
+          step_amount?: number
+          total_weeks?: number
+          current_week?: number
+          total_deposited?: number
+          deposit_history?: ChallengeDeposit[]
+          custom_amounts?: number[] | null
+          target_amount?: number | null
+          linked_account_id?: string | null
+          auto_create_transaction?: boolean
+          status?: ChallengeStatus
+          start_date?: string
+          target_date?: string | null
+          completed_at?: string | null
+          notification_enabled?: boolean
+          notification_day?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
+}
+
+// Financial Challenge types
+export type ChallengeType = '52_weeks' | 'custom_saving';
+export type ChallengeDirection = 'standard' | 'inverse';
+export type ChallengeStatus = 'active' | 'paused' | 'completed' | 'cancelled';
+
+export interface ChallengeDeposit {
+  week: number;
+  date: string;
+  status: 'paid' | 'pending' | 'skipped';
+  amount: number;
 }
 
 // Meal Plan JSON structure

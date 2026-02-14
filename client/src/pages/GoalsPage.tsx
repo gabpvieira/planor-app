@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -33,7 +33,8 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  Loader2
+  Loader2,
+  Trophy
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +43,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { FloatingHeader } from '@/components/FloatingHeader';
+import { FinancialChallengeModule } from '@/components/goals/FinancialChallengeModule';
 
 // Category configuration
 const CATEGORIES: { value: GoalCategory; label: string; icon: React.ElementType; color: string }[] = [
@@ -702,6 +705,7 @@ function StatsOverview() {
 
 // Main Page Component
 export default function GoalsPage() {
+  const [activeTab, setActiveTab] = useState<'goals' | 'challenge'>('goals');
   const [selectedCategory, setSelectedCategory] = useState<GoalCategory | 'all'>('all');
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
@@ -811,77 +815,102 @@ export default function GoalsPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="shrink-0 p-6 pb-0">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Metas</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Acompanhe seu progresso e conquiste seus objetivos
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setIsTemplatesOpen(true)} className="border-border/30">
-              <Sparkles className="w-4 h-4 mr-2" />
-              Templates
-            </Button>
-            <Button size="sm" onClick={() => setIsCreateOpen(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Meta
-            </Button>
-          </div>
-        </div>
+      <FloatingHeader 
+        title="Metas"
+        subtitle="Acompanhe seu progresso e conquiste seus objetivos"
+        actions={
+          activeTab === 'goals' ? (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsTemplatesOpen(true)} className="border-border/30">
+                <Sparkles className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Templates</span>
+              </Button>
+              <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Nova Meta</span>
+              </Button>
+            </div>
+          ) : null
+        }
+      />
 
-        {/* Stats Overview */}
-        <StatsOverview />
-
-        {/* Category Filters */}
-        <div className="flex items-center justify-between mb-4">
-          <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as GoalCategory | 'all')}>
-            <TabsList className="bg-muted/30 border border-border/20">
-              <TabsTrigger value="all" className="gap-1.5 data-[state=active]:bg-background">
-                <Target className="w-4 h-4" />
-                Todas
-              </TabsTrigger>
-              {CATEGORIES.map(cat => (
-                <TabsTrigger key={cat.value} value={cat.value} className="gap-1.5 data-[state=active]:bg-background">
-                  <cat.icon className="w-4 h-4" />
-                  <span className="hidden sm:inline">{cat.label}</span>
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setShowArchived(!showArchived)}
-            className={cn(showArchived && "text-primary")}
-          >
-            <Archive className="w-4 h-4 mr-1" />
-            {showArchived ? 'Ocultar arquivadas' : 'Ver arquivadas'}
-          </Button>
-        </div>
+      {/* Main Tabs - Goals vs Challenge */}
+      <div className="px-4 sm:px-6 pb-4">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'goals' | 'challenge')}>
+          <TabsList className="bg-muted/30 border border-border/20 w-full sm:w-auto">
+            <TabsTrigger value="goals" className="gap-2 flex-1 sm:flex-none data-[state=active]:bg-background">
+              <Target className="w-4 h-4" />
+              Metas
+            </TabsTrigger>
+            <TabsTrigger value="challenge" className="gap-2 flex-1 sm:flex-none data-[state=active]:bg-background">
+              <Trophy className="w-4 h-4" />
+              Desafio 52 Semanas
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Goals Grid */}
-      <div className="flex-1 overflow-y-auto p-6 pt-2">
-        {filteredGoals.length === 0 ? (
-          <EmptyState onCreateClick={() => setIsCreateOpen(true)} />
-        ) : (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredGoals.map(goal => (
-              <GoalCard
-                key={goal.id}
-                goal={goal}
-                onEdit={setEditingGoal}
-                onUpdateProgress={handleUpdateProgress}
-                onArchive={handleArchive}
-                onDelete={handleDelete}
-              />
-            ))}
+      {activeTab === 'goals' ? (
+        <>
+          <div className="px-4 sm:px-6 pb-6">
+            {/* Stats Overview */}
+            <StatsOverview />
+
+            {/* Category Filters */}
+            <div className="flex items-center justify-between mb-4">
+              <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as GoalCategory | 'all')}>
+                <TabsList className="bg-muted/30 border border-border/20">
+                  <TabsTrigger value="all" className="gap-1.5 data-[state=active]:bg-background">
+                    <Target className="w-4 h-4" />
+                    Todas
+                  </TabsTrigger>
+                  {CATEGORIES.map(cat => (
+                    <TabsTrigger key={cat.value} value={cat.value} className="gap-1.5 data-[state=active]:bg-background">
+                      <cat.icon className="w-4 h-4" />
+                      <span className="hidden sm:inline">{cat.label}</span>
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowArchived(!showArchived)}
+                className={cn(showArchived && "text-primary")}
+              >
+                <Archive className="w-4 h-4 mr-1" />
+                {showArchived ? 'Ocultar arquivadas' : 'Ver arquivadas'}
+              </Button>
+            </div>
           </div>
-        )}
-      </div>
+
+          {/* Goals Grid */}
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+            {filteredGoals.length === 0 ? (
+              <EmptyState onCreateClick={() => setIsCreateOpen(true)} />
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredGoals.map(goal => (
+                  <GoalCard
+                    key={goal.id}
+                    goal={goal}
+                    onEdit={setEditingGoal}
+                    onUpdateProgress={handleUpdateProgress}
+                    onArchive={handleArchive}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        /* Financial Challenge Module */
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6">
+          <FinancialChallengeModule />
+        </div>
+      )}
 
       {/* Dialogs */}
       <GoalFormDialog

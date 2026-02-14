@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useSupabaseKnowledge, useDailyFlashcard } from "@/hooks/use-supabase-knowledge";
 import { knowledgeService, KnowledgeFilter } from "@/services/knowledge.service";
+import { FloatingHeader } from "@/components/FloatingHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -517,20 +518,13 @@ export default function KnowledgePage() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Search */}
-      <div className="sticky top-0 z-10 -mx-4 px-4 py-4 md:-mx-8 md:px-8 lg:-mx-10 lg:px-10 bg-background/80 backdrop-blur-md border-b border-white/5">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              <Brain className="size-6 text-violet-400" />
-              Conhecimento
-            </h1>
-            <p className="text-sm text-muted-foreground">Seu Digital Brain pessoal</p>
-          </div>
-
+      <FloatingHeader 
+        title="Conhecimento"
+        subtitle="Seu Digital Brain pessoal"
+        actions={
           <div className="flex items-center gap-3">
             {/* Search Bar */}
-            <div className="relative flex-1 md:w-80">
+            <div className="relative hidden sm:block w-64 lg:w-80">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
               <Input
                 id="knowledge-search"
@@ -551,14 +545,29 @@ export default function KnowledgePage() {
             >
               <Plus className="size-4 mr-2" />
               Capture
-              <kbd className="ml-2 px-1.5 py-0.5 text-[10px] bg-white/10 rounded">⌘N</kbd>
             </Button>
           </div>
-        </div>
+        }
+      />
+
+      <div className="px-4 sm:px-6">
+        {/* Mobile Search */}
+        {isMobile && (
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <Input
+              id="knowledge-search-mobile"
+              placeholder="Search or Ask AI..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="pl-9 bg-white/5 border-white/10 focus:border-white/20 rounded-xl"
+            />
+          </div>
+        )}
 
         {/* Mobile Filter Pills */}
         {isMobile && (
-          <div className="flex gap-2 mt-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
+          <div className="flex gap-2 mb-4 overflow-x-auto pb-2 -mx-4 px-4 scrollbar-hide">
             {Object.entries(FILTER_CONFIG).map(([key, config]) => (
               <button
                 key={key}
@@ -576,7 +585,6 @@ export default function KnowledgePage() {
             ))}
           </div>
         )}
-      </div>
 
       {/* Main Content */}
       <div className="flex gap-6">
@@ -665,6 +673,7 @@ export default function KnowledgePage() {
         isOpen={isSummaryOpen}
         onClose={() => setIsSummaryOpen(false)}
       />
+      </div>
     </div>
   );
 }
